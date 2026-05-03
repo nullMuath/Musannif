@@ -99,7 +99,7 @@ public class MainController {
     @FXML
     private void initialize() {
         try {
-            sidebarLogo.setImage(new Image(MainController.class.getResourceAsStream("../icons/app-icon.png")));
+            sidebarLogo.setImage(new Image(MainController.class.getResourceAsStream("/org/app/musannif/icons/app-icon.png")));
         } catch (Exception e) {
             System.err.println("Failed to load sidebar logo: " + e.getMessage());
         }
@@ -291,7 +291,7 @@ public class MainController {
         VBox contentBox = new VBox(8);
 
         try {
-            ImageView logo = new ImageView(new Image(MainController.class.getResourceAsStream("../icons/logo_alternative.svg")));
+            ImageView logo = new ImageView(new Image(MainController.class.getResourceAsStream("/org/app/musannif/icons/app-icon.svg")));
             logo.setFitHeight(80);
             logo.setFitWidth(80);
             logo.setPreserveRatio(true);

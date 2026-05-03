@@ -1,39 +1,14 @@
 /*
  * Musannif — JavaFX Stylesheet
  * Load via: scene.getStylesheets().add(getClass().getResource("styles.css").toExternalForm());
- *
- * Font: Inter is bundled via @font-face below.
- * If Inter is not bundled, "Segoe UI" / "SF Pro Text" are used as fallbacks.
  */
-
-/* ── @font-face (point src to your bundled TTF files) ──────────── */
-@font-face {
-    font-family: "Inter";
-    src: url("fonts/Inter-Regular.ttf");
-    font-weight: 400;
-}
-@font-face {
-    font-family: "Inter";
-    src: url("fonts/Inter-Medium.ttf");
-    font-weight: 500;
-}
-@font-face {
-    font-family: "Inter";
-    src: url("fonts/Inter-SemiBold.ttf");
-    font-weight: 600;
-}
-@font-face {
-    font-family: "Inter";
-    src: url("fonts/Inter-Bold.ttf");
-    font-weight: 700;
-}
 
 /* ══════════════════════════════════════════════════════════════════
    ROOT
 ══════════════════════════════════════════════════════════════════ */
 .root-pane {
     -fx-background-color: #0F1117;
-    -fx-font-family: "Inter", "Segoe UI", "SF Pro Text", sans-serif;
+    -fx-font-family: "Segoe UI", "SF Pro Text", sans-serif;
     -fx-font-size: 12px;
 }
 
