@@ -1,202 +1,206 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressBar?>
 <?import javafx.scene.control.RadioButton?>
-<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.control.ToggleGroup?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.TreeView?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
-<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
-<?import javafx.scene.text.Font?>
 
-<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="700.0" prefWidth="900.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
-   <top>
-      <HBox prefHeight="47.0" prefWidth="900.0" spacing="15.0" style="-fx-background-color: #1D9E75;" BorderPane.alignment="CENTER">
-         <BorderPane.margin>
-            <Insets />
-         </BorderPane.margin>
-         <padding>
-            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
-         </padding>
-         <children>
-            <Region prefHeight="60.0" prefWidth="245.0" />
-            <VBox prefHeight="60.0" prefWidth="481.0">
-               <children>
-                  <Label alignment="CENTER" contentDisplay="TOP" prefHeight="21.0" prefWidth="171.0" text="Musannif - مصنف" textAlignment="CENTER" textFill="WHITE" textOverrun="WORD_ELLIPSIS" translateX="125.0">
-                     <font>
-                        <Font name="System Bold" size="20.0" />
-                     </font>
-                  </Label>
-                  <Label alignment="CENTER" contentDisplay="TOP" prefHeight="21.0" prefWidth="171.0" text="file organizer" textAlignment="CENTER" textFill="WHITE" textOverrun="WORD_ELLIPSIS" translateX="125.0">
-                     <font>
-                        <Font name="System Italic" size="12.0" />
-                     </font>
-                  </Label>
-               </children>
+<BorderPane maxHeight="680" maxWidth="960" minHeight="680" minWidth="960" prefHeight="680" prefWidth="960" styleClass="root-pane" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
+
+    <!-- ToggleGroup defined here so it is accessible across the whole scene -->
+    <fx:define>
+        <ToggleGroup fx:id="organizeGroup" />
+    </fx:define>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CUSTOM TITLE BAR
+    ════════════════════════════════════════════════════════════ -->
+    <top>
+        <HBox fx:id="titleBar" alignment="CENTER_LEFT" prefHeight="40" spacing="12" styleClass="title-bar">
+            <padding><Insets left="12" right="12" /></padding>
+
+            <ImageView fitHeight="24" fitWidth="24" pickOnBounds="true" preserveRatio="true">
+                <image>
+                    <Image url="@icons/app-icon-32.png" />
+                </image>
+            </ImageView>
+
+            <Label styleClass="title-label" text="Musannif" />
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <Button fx:id="btnMinimize" mnemonicParsing="false" onAction="#handleMinimize" styleClass="window-control-btn" text="−" />
+            <Button fx:id="btnMaximize" mnemonicParsing="false" onAction="#handleMaximize" styleClass="window-control-btn" text="□" />
+            <Button fx:id="btnClose" mnemonicParsing="false" onAction="#handleClose" styleClass="window-control-btn,close-btn" text="✕" />
+        </HBox>
+    </top>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         LEFT SIDEBAR  (220 px)
+    ════════════════════════════════════════════════════════════ -->
+    <left>
+        <VBox maxWidth="220" minWidth="220" prefWidth="220" styleClass="sidebar">
+
+            <!-- Logo row -->
+            <HBox alignment="CENTER_LEFT" prefHeight="60" spacing="10" styleClass="logo-area">
+                <padding><Insets bottom="14" left="20" right="20" top="16" /></padding>
+                <ImageView fx:id="sidebarLogo" fitHeight="40" fitWidth="40" pickOnBounds="true" preserveRatio="true" styleClass="logo-icon" />
+                <VBox spacing="2">
+                    <Label styleClass="app-name" text="Musannif" />
+                    <Label styleClass="app-tagline" text="مُصَنِّف · File organizer" />
+                </VBox>
+            </HBox>
+
+            <Separator styleClass="sidebar-divider" />
+
+            <!-- Section label -->
+            <Label styleClass="nav-section-label" text="NAVIGATION">
+                <VBox.margin><Insets bottom="8" left="20" right="20" top="14" /></VBox.margin>
+            </Label>
+
+            <!-- Organize (active) -->
+            <HBox fx:id="navOrganize" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item,nav-item-active">
+                <padding><Insets left="17" right="20" /></padding>
+                <Label styleClass="nav-icon-active" text="⧉" />
+                <Label styleClass="nav-label-active" text="Organize" />
+            </HBox>
+
+            <!-- History -->
+            <HBox fx:id="navHistory" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item">
+                <padding><Insets left="20" right="20" /></padding>
+                <Label styleClass="nav-icon" text="⏱" />
+                <Label styleClass="nav-label" text="History" />
+            </HBox>
+
+            <!-- Push rest to bottom -->
+            <Region VBox.vgrow="ALWAYS" />
+         <Button fx:id="btnGenerateTestFiles" alignment="TOP_CENTER" contentDisplay="RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" onAction="#handleGenerateTestFiles" prefHeight="19.0" prefWidth="138.0" styleClass="btn-accent" text="Generate Test Files" textAlignment="CENTER" translateX="40.0" translateY="-40.0" />
+         <Button fx:id="btnAbout" alignment="TOP_CENTER" contentDisplay="RIGHT" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" mnemonicParsing="false" nodeOrientation="RIGHT_TO_LEFT" onAction="#handleInfo" prefHeight="19.0" prefWidth="138.0" styleClass="btn-accent" text="About Musannif" textAlignment="CENTER" translateX="40.0" translateY="-20.0" />
+         <Region prefWidth="219.0" />
+
+        </VBox>
+    </left>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MAIN CONTENT AREA
+    ════════════════════════════════════════════════════════════ -->
+    <center>
+        <VBox styleClass="main-content">
+
+            <!-- ── Controls card ─────────────────────────────── -->
+            <VBox spacing="10" styleClass="controls-card">
+                <padding><Insets bottom="12" left="14" right="14" top="12" /></padding>
+                <VBox.margin><Insets bottom="0" left="14" right="14" top="14" /></VBox.margin>
+
+                <!-- Row 1 — Folder -->
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label minWidth="60" styleClass="field-label" text="Folder" />
+                    <TextField fx:id="txtFolderPath" editable="false" prefHeight="30" promptText="/Users/Downloads" styleClass="path-field" HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnBrowse" onAction="#handleBrowse" prefHeight="30" prefWidth="72" styleClass="btn-filled" text="Browse" />
+                </HBox>
+
+                <!-- Row 2 — Organize by + actions -->
+                <HBox alignment="CENTER_LEFT" spacing="10">
+                    <Label minWidth="60" styleClass="field-label" text="Organize" />
+
+                    <!-- Pill-shaped radio chips -->
+                    <HBox alignment="CENTER_LEFT" spacing="5" styleClass="chip-group">
+                        <RadioButton fx:id="rbType" prefHeight="26.0" prefWidth="84.0" selected="true" styleClass="chip" text="File Type">
+                     <toggleGroup>
+                        <ToggleGroup fx:id="organizeGroup" />
+                     </toggleGroup></RadioButton>
+                        <RadioButton fx:id="rbDate" prefHeight="26.0" prefWidth="111.0" styleClass="chip" text="Date Modified" toggleGroup="$organizeGroup" />
+                        <RadioButton fx:id="rbExt" prefHeight="26.0" prefWidth="85.0" styleClass="chip" text="Extension" toggleGroup="$organizeGroup" />
+                  <Region prefHeight="30.0" prefWidth="6.0" />
+                  <RadioButton fx:id="rbIcon" mnemonicParsing="false" prefHeight="17.0" prefWidth="67.0" styleClass="btn-icon" stylesheets="@styles.css" text="  Icons" />
+                    </HBox>
+
+                    <Region HBox.hgrow="ALWAYS" />
+
+                    <Button fx:id="btnScan" disable="true" onAction="#handleScan" prefHeight="30" styleClass="btn-filled" text="Scan &amp; Preview" />
+
+                    <Button fx:id="btnApply" disable="true" onAction="#handleApply" prefHeight="30" styleClass="btn-success" text="Apply Changes" />
+                </HBox>
             </VBox>
-            <Region prefHeight="60.0" prefWidth="130.0" HBox.hgrow="ALWAYS" />
-            <Button fx:id="infoBtn" mnemonicParsing="false" onAction="#handleInfo" prefHeight="42.0" prefWidth="44.0" styleClass="credits-button" stylesheets="@styles.css" text="ⓘ" />
-         </children>
-      </HBox>
-   </top>
-   <bottom>
-      <HBox prefHeight="19.0" prefWidth="900.0" style="-fx-background-color: #777777;" BorderPane.alignment="CENTER">
-         <children>
-            <Label alignment="TOP_RIGHT" prefHeight="17.0" prefWidth="101.0" text="Status: ">
-               <padding>
-                  <Insets left="20.0" />
-               </padding>
-            </Label>
-            <Label fx:id="lblStatus" alignment="TOP_RIGHT" contentDisplay="CENTER" prefHeight="17.0" prefWidth="298.0" textAlignment="CENTER" textFill="WHITE">
-               <padding>
-                  <Insets left="20.0" />
-               </padding>
-            </Label>
-            <Region prefHeight="19.0" prefWidth="121.0" />
-            <ProgressBar fx:id="scanProgress" prefHeight="17.0" prefWidth="378.0" progress="0.0" stylesheets="@styles.css" />
-            <Region prefHeight="19.0" prefWidth="80.0" />
-         </children>
-      </HBox>
-   </bottom>
-   <left>
-      <VBox prefHeight="200.0" prefWidth="150.0" style="-fx-background-color: #2c3338;" BorderPane.alignment="CENTER">
-         <children>
-            <Button fx:id="organizeBtn" maxWidth="-Infinity" mnemonicParsing="false" onAction="#handleOrganize" prefHeight="30.0" prefWidth="153.0" stylesheets="@styles.css" text="Organize">
-               <padding>
-                  <Insets bottom="15.0" top="15.0" />
-               </padding>
-               <styleClass>
-                  <String fx:value="nav-button" />
-                  <String fx:value="nav-button-active" />
-               </styleClass>
-            </Button>
-            <Button fx:id="previewBtn" maxWidth="-Infinity" mnemonicParsing="false" onAction="#handlePreview" prefHeight="30.0" prefWidth="153.0" stylesheets="@styles.css" text="Preview">
-               <padding>
-                  <Insets bottom="15.0" top="15.0" />
-               </padding>
-               <styleClass>
-                  <String fx:value="nav-button" />
-                  <String fx:value="nav-button-active" />
-               </styleClass>
-            </Button>
-            <Button fx:id="historyBtn" maxWidth="-Infinity" mnemonicParsing="false" onAction="#handleHistory" prefHeight="30.0" prefWidth="153.0" stylesheets="@styles.css" text="History">
-               <padding>
-                  <Insets bottom="15.0" top="15.0" />
-               </padding>
-               <styleClass>
-                  <String fx:value="nav-button" />
-                  <String fx:value="nav-button-active" />
-               </styleClass>
-            </Button>
-            <Region prefHeight="454.0" prefWidth="150.0" />
-            <Button fx:id="genTestBtn" maxWidth="-Infinity" mnemonicParsing="false" onAction="#handleGenerateTestFiles" prefHeight="30.0" prefWidth="153.0" stylesheets="@styles.css" text="Generate Test Files" textAlignment="CENTER" textFill="#ff8585">
-               <padding>
-                  <Insets bottom="15.0" top="15.0" />
-               </padding>
-               <styleClass>
-                  <String fx:value="nav-buttontest" />
-                  <String fx:value="nav-buttontest" />
-               </styleClass>
-               <font>
-                  <Font name="Arial Black" size="1.0" />
-               </font>
-            </Button>
-            <Button fx:id="settingsBtn" maxWidth="-Infinity" mnemonicParsing="false" onAction="#handleSettings" prefHeight="30.0" prefWidth="153.0" stylesheets="@styles.css" text="Settings">
-               <padding>
-                  <Insets bottom="15.0" top="15.0" />
-               </padding>
-               <styleClass>
-                  <String fx:value="nav-button" />
-                  <String fx:value="nav-button-active" />
-               </styleClass>
-            </Button>
-         </children>
-      </VBox>
-   </left>
-   <center>
-      <SplitPane dividerPositions="0.5" prefHeight="160.0" prefWidth="200.0" BorderPane.alignment="CENTER">
-        <items>
-          <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="0.0" minWidth="0.0" prefHeight="643.0" prefWidth="212.0">
-               <children>
-                  <VBox layoutY="2.0" maxWidth="-Infinity" prefHeight="598.0" prefWidth="217.0">
-                     <children>
-                        <Label text="1. Target Folder" textAlignment="CENTER" />
-                        <VBox prefHeight="200.0" prefWidth="100.0" spacing="10.0">
-                           <children>
-                              <TextField fx:id="txtFolderPath" prefWidth="174.0" />
-                              <Button fx:id="btnBrowse" mnemonicParsing="false" onAction="#handleBrowse" text="Browse" />
-                           </children>
+
+            <!-- ── File table + Preview panel ───────────────── -->
+            <HBox VBox.vgrow="ALWAYS">
+                <VBox.margin><Insets bottom="0" left="14" right="14" top="10" /></VBox.margin>
+
+                <!-- File table -->
+                <TableView fx:id="fileTable" styleClass="file-table" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <placeholder>
+                        <VBox alignment="CENTER" spacing="8">
+                            <Label style="-fx-font-size: 34;" text="📁" />
+                            <Label fx:id="lblEmptyState" styleClass="empty-state-label" text="Select a folder to get started" />
                         </VBox>
-                        <Region maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="33.0" prefWidth="177.0" />
-                        <Label text="2. Organize By" textAlignment="CENTER" />
-                        <VBox>
-                           <children>
-                              <RadioButton fx:id="radioExtension" mnemonicParsing="false" selected="true" text="File Extension">
-                                 <toggleGroup>
-                                    <ToggleGroup fx:id="orgGroup" />
-                                 </toggleGroup>
-                              </RadioButton>
-                              <RadioButton fx:id="radioType" mnemonicParsing="false" text="File Type" toggleGroup="$orgGroup" />
-                              <RadioButton fx:id="radioDate" mnemonicParsing="false" text="Date Modified" toggleGroup="$orgGroup" />
-                           </children>
+                    </placeholder>
+                    <columns>
+                        <TableColumn fx:id="colName" minWidth="140" prefWidth="180" text="FILE NAME" />
+                        <TableColumn fx:id="colExt" minWidth="80" prefWidth="180" text="EXT" />
+                        <TableColumn fx:id="colSize" minWidth="80" prefWidth="180" text="SIZE" />
+                        <TableColumn fx:id="colModified" minWidth="100" prefWidth="180" text="DATE" />
+                    </columns>
+                </TableView>
+
+                <!-- Preview panel — shown after scan -->
+                <VBox fx:id="previewPanel" managed="false" maxWidth="360" minWidth="220" prefWidth="260" styleClass="preview-panel" visible="false">
+
+                    <!-- Panel header -->
+                    <HBox alignment="CENTER_LEFT" prefHeight="36" spacing="8" styleClass="preview-header">
+                        <padding><Insets left="12" right="10" /></padding>
+                        <VBox spacing="1" HBox.hgrow="ALWAYS">
+                            <Label styleClass="preview-title" text="Proposed Structure" />
+                            <Label fx:id="lblPreviewMethod" styleClass="preview-subtitle" text="by File Type" />
                         </VBox>
-                        <Region maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="33.0" prefWidth="177.0" />
-                        <Label text="3. Action" textAlignment="CENTER" />
-                        <HBox prefHeight="100.0" prefWidth="200.0">
-                           <children>
-                              <Button fx:id="btnScan" mnemonicParsing="false" onAction="#handleScan" text="Scan Folder" />
-                              <Button fx:id="btnApply" mnemonicParsing="false" onAction="#handleApply" prefHeight="25.0" prefWidth="84.0" text="Apply" translateX="20.0" />
-                           </children>
-                        </HBox>
-                        <HBox prefHeight="100.0" prefWidth="200.0">
-                           <children>
-                              <ProgressBar fx:id="scanProgress" progress="0.0" stylesheets="@styles.css" />
-                           </children>
-                        </HBox>
-                        <StackPane prefHeight="600.0" prefWidth="117.0">
-                           <children>
-                              <VBox prefHeight="423.0" prefWidth="228.0">
-                                 <children>
-                                    <Region maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="11.0" prefWidth="177.0" />
-                                    <CheckBox fx:id="chkByExtension" mnemonicParsing="false" onAction="#handleApply" prefHeight="17.0" prefWidth="169.0" text="Use icons for folders" />
-                                 </children></VBox>
-                           </children>
-                        </StackPane>
-                     </children>
-                     <opaqueInsets>
-                        <Insets left="20.0" right="20.0" />
-                     </opaqueInsets>
-                     <padding>
-                        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
-                     </padding>
-                  </VBox>
-               </children>
-            </AnchorPane>
-           <AnchorPane>
-              <TableView fx:id="fileTable" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0">
-                 <columns>
-                    <TableColumn fx:id="colName" prefWidth="220" text="File Name" />
-                    <TableColumn fx:id="colExt" prefWidth="80" text="Extension" />
-                    <TableColumn fx:id="colSize" prefWidth="100" text="Size" />
-                    <TableColumn fx:id="colModified" prefWidth="160" text="Date Modified" />
-                 </columns>
-                 <placeholder>
-                    <Label text="No files scanned yet. Browse a folder and click Scan." />
-                 </placeholder>
-              </TableView>
-            </AnchorPane>
-        </items>
-      </SplitPane>
-   </center>
+                        <Button fx:id="btnClosePreview" styleClass="btn-icon" text="✕" />
+                    </HBox>
+
+                    <!-- Destination path strip -->
+                    <HBox alignment="CENTER_LEFT" prefHeight="28" styleClass="preview-path-bar">
+                        <padding><Insets left="12" right="12" /></padding>
+                        <Label fx:id="lblDestPath" styleClass="dest-path-label" text="/Downloads/{Documents, Images…}" />
+                    </HBox>
+
+                    <!-- Tree view -->
+                    <TreeView fx:id="treePreview" showRoot="false" styleClass="preview-tree" VBox.vgrow="ALWAYS" />
+
+                    <!-- Summary footer -->
+                    <HBox alignment="CENTER_LEFT" prefHeight="30" styleClass="preview-footer">
+                        <padding><Insets left="12" right="12" /></padding>
+                        <Label fx:id="lblPreviewSummary" styleClass="preview-footer-label" text="15 files · 0 uncategorized" HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblTotalSize" styleClass="preview-footer-label" text="1.8 GB total" />
+                    </HBox>
+
+                </VBox>
+            </HBox>
+
+            <!-- ── Status bar ─────────────────────────────────── -->
+            <HBox fx:id="statusBar" alignment="CENTER_LEFT" prefHeight="33" spacing="10" styleClass="status-bar">
+                <padding><Insets left="14" right="14" /></padding>
+
+                <Label fx:id="lblStatus" styleClass="status-label" text="Select a folder to get started" HBox.hgrow="ALWAYS" />
+
+                <Button fx:id="btnTogglePreview" managed="false" styleClass="btn-toggle-preview" text="Show preview" visible="false" />
+
+                <ProgressBar fx:id="scanProgress" managed="false" prefHeight="3" prefWidth="110" progress="0" styleClass="scan-progress" visible="false" />
+
+            </HBox>
+
+        </VBox>
+    </center>
+
 </BorderPane>

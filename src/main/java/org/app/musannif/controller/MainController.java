@@ -5,6 +5,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import org.app.musannif.model.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -12,6 +14,7 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
 import javafx.event.ActionEvent;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -26,38 +29,32 @@ import java.util.List;
 public class MainController {
     private ObservableList<ScannedFile> scannedFiles = FXCollections.observableArrayList();
     private Path selectedFolder;
+    private double xOffset = 0;
+    private double yOffset = 0;
     @FXML
     private TextField txtFolderPath;
     @FXML
     private Button btnBrowse;
     @FXML
     private Button btnScan;
-
     @FXML
     private Button btnApply;
-
-    @FXML
-    private Button btnInfo;
-
-    @FXML
-    private Button genTestBtn;
-
-    @FXML
-    private ProgressBar scanProgress;
-
-    @FXML
-    private Button organizeBtn;
-
-    @FXML
-    private Button previewBtn;
-
-    @FXML
-    private Button historyBtn;
-
-    @FXML
-    private Button settingsBtn;
     @FXML
     private Label lblStatus;
+    @FXML
+    private Button btnGenerateTestFiles;
+    @FXML
+    private Button btnHistory;
+    @FXML
+    private HBox titleBar;
+    @FXML
+    private Button btnMinimize;
+    @FXML
+    private Button btnMaximize;
+    @FXML
+    private Button btnClose;
+    @FXML
+    private ImageView sidebarLogo;
     @FXML
     private TableView<ScannedFile> fileTable;
     @FXML
@@ -68,15 +65,47 @@ public class MainController {
     private TableColumn<ScannedFile, String> colSize;
     @FXML
     private TableColumn<ScannedFile, String> colModified;
-
     @FXML
-    private CheckBox chkByExtension;
+    private RadioButton rbType;
+    @FXML
+    private RadioButton rbIcon;
+    @FXML
+    private RadioButton rbDate;
+    @FXML
+    private RadioButton rbExt;
+    @FXML
+    private Label lblEmptyState;
+    @FXML
+    private VBox previewPanel;
+    @FXML
+    private Button btnClosePreview;
+    @FXML
+    private Button btnTogglePreview;
+    @FXML
+    private Label lblPreviewMethod;
+    @FXML
+    private Label lblDestPath;
+    @FXML
+    private TreeView<String> treePreview;
+    @FXML
+    private Label lblPreviewSummary;
+    @FXML
+    private Label lblTotalSize;
+    @FXML
+    private ProgressBar scanProgress;
+    @FXML
+    private HBox statusBar;
 
     @FXML
     private void initialize() {
-        previewBtn.setDisable(true);
-        historyBtn.setDisable(true);
+        try {
+            sidebarLogo.setImage(new Image(MainController.class.getResourceAsStream("../icons/app-icon.png")));
+        } catch (Exception e) {
+            System.err.println("Failed to load sidebar logo: " + e.getMessage());
+        }
+
         fileTable.setItems(scannedFiles);
+        fileTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         btnScan.setDisable(true);
         btnApply.setDisable(true);
         lblStatus.setText("Select a folder to begin.");
@@ -84,14 +113,26 @@ public class MainController {
                 new SimpleStringProperty(cellData.getValue().path().getFileName().toString()));
         colExt.setCellValueFactory(cellData->
                 new SimpleStringProperty(cellData.getValue().extension()));
-
         colSize.setCellValueFactory(cellData ->
                 new SimpleStringProperty(helperMethods.formatFileSize(cellData.getValue().sizeBytes())));
-
         colModified.setCellValueFactory(cellData ->
                 new SimpleStringProperty(helperMethods.formatDateTime(cellData.getValue().lastModified())));
-        Logger.getLogger().info("Application Started");
 
+        setupTitleBarDrag();
+        Logger.getLogger().info("Application Started");
+    }
+
+    private void setupTitleBarDrag() {
+        titleBar.setOnMousePressed(event -> {
+            xOffset = event.getSceneX();
+            yOffset = event.getSceneY();
+        });
+
+        titleBar.setOnMouseDragged(event -> {
+            Stage stage = (Stage) titleBar.getScene().getWindow();
+            stage.setX(event.getScreenX() - xOffset);
+            stage.setY(event.getScreenY() - yOffset);
+        });
     }
 
     @FXML
@@ -188,7 +229,7 @@ public class MainController {
 
                    organizeTask.setOnSucceeded(e -> {
                        FileOrganizer.OrganizationResult result = organizeTask.getValue();
-                       if (chkByExtension.isSelected())
+                       if (rbIcon.isSelected())
                            helperMethods.addFolderIcons(selectedFolder);
                        scannedFiles.clear();
                        btnScan.setDisable(false);
@@ -247,13 +288,28 @@ public class MainController {
         Hyperlink repoLink = new Hyperlink("github.com/cpit252-spring-26-IT2/project-musannif");
         repoLink.setOnAction(e -> openURL("https://github.com/cpit252-spring-26-IT2/project-musannif"));
 
+        VBox contentBox = new VBox(8);
+
+        try {
+            ImageView logo = new ImageView(new Image(MainController.class.getResourceAsStream("../icons/logo_alternative.svg")));
+            logo.setFitHeight(80);
+            logo.setFitWidth(80);
+            logo.setPreserveRatio(true);
+            HBox logoContainer = new HBox(logo);
+            logoContainer.setAlignment(Pos.CENTER);
+            logoContainer.setPrefHeight(100);
+            contentBox.getChildren().add(logoContainer);
+        } catch (Exception e) {
+            // Logo file not found yet, skip
+        }
+
         HBox authors = new HBox(2, authorLink1, new Label("&"), authorLink2);
         authors.setAlignment(Pos.CENTER);
         Label devLabel = new Label("Developed by");
         devLabel.setMaxWidth(Double.MAX_VALUE);
         devLabel.setAlignment(Pos.CENTER);
 
-        VBox content = new VBox(8,
+        contentBox.getChildren().addAll(
                 new Label("a javafx desktop app that organizes and sorts your files."),
                 new Label("Version 0.2"),
                 devLabel,
@@ -262,6 +318,8 @@ public class MainController {
                 new Label("Project Repository:"),
                 repoLink
         );
+
+        VBox content = contentBox;
 
         Alert alert = new Alert(Alert.AlertType.NONE);
         alert.setTitle("About Musannif");
@@ -287,6 +345,24 @@ public class MainController {
         lblStatus.setText("Generating Test Files");
         lblStatus.setText("Files Generated!");
         Desktop.getDesktop().open(new File(System.getProperty("user.home")+"/.musannif-test"));
+    }
+
+    @FXML
+    private void handleMinimize(ActionEvent event) {
+        Stage stage = (Stage) btnMinimize.getScene().getWindow();
+        stage.setIconified(true);
+    }
+
+    @FXML
+    private void handleMaximize(ActionEvent event) {
+        Stage stage = (Stage) btnMaximize.getScene().getWindow();
+        stage.setMaximized(!stage.isMaximized());
+    }
+
+    @FXML
+    private void handleClose(ActionEvent event) {
+        Stage stage = (Stage) btnClose.getScene().getWindow();
+        stage.close();
     }
 }
 
