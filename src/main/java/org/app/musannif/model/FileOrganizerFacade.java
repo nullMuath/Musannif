@@ -1,7 +1,7 @@
 package org.app.musannif.model;
 
 import org.app.musannif.model.category.Categories;
-import org.app.musannif.model.category.FileCategorizer;
+import org.app.musannif.model.category.ExtensionFileCategorizer;
 import org.app.musannif.model.category.FileCategory;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.Objects;
  * <p>
  * The controller or any other caller only needs to know <em>what</em> to
  * organize and <em>where</em> to put the result — all subsystem wiring
- * ({@link FileScanner}, {@link FileCategorizer}, {@link FileOrganizer}) is
+ * ({@link FileScanner}, {@link ExtensionFileCategorizer}, {@link FileOrganizer}) is
  * hidden inside this class.
  * </p>
  *
@@ -37,7 +37,7 @@ import java.util.Objects;
 public class FileOrganizerFacade {
 
     private final FileScanner scanner;
-    private final FileCategorizer categorizer;
+    private final ExtensionFileCategorizer categorizer;
     private final FileOrganizer organizer;
 
     private FileOrganizerFacade(Builder builder) {
@@ -46,7 +46,7 @@ public class FileOrganizerFacade {
                 .maxDepth(builder.maxDepth)
                 .build();
 
-        FileCategorizer.Builder categorizerBuilder = new FileCategorizer.Builder();
+        ExtensionFileCategorizer.Builder categorizerBuilder = new ExtensionFileCategorizer.Builder();
         for (FileCategory category : builder.categories) {
             categorizerBuilder.register(category);
         }

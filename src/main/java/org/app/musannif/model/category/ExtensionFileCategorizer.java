@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  *
  * <h3>Usage example</h3>
  * <pre>{@code
- * FileCategorizer categorizer = new FileCategorizer.Builder()
+ * ExtensionFileCategorizer categorizer = new ExtensionFileCategorizer.Builder()
  *         .register(new Categories.Documents())
  *         .register(new Categories.Images())
  *         .register(new Categories.Videos())
@@ -33,14 +33,14 @@ import java.util.stream.Stream;
  * Map<String, List<ScannedFile>> result = categorizer.categorize(files);
  * }</pre>
  */
-public class FileCategorizer {
+public class ExtensionFileCategorizer {
 
     public static final String FALLBACK_CATEGORY = "Other";
 
     /** Ordered list — iteration order determines priority (first match wins). */
     private final List<FileCategory> categories;
 
-    private FileCategorizer(Builder builder) {
+    private ExtensionFileCategorizer(Builder builder) {
         // Defensive copy; preserves insertion order (= priority order).
         this.categories = Collections.unmodifiableList(new ArrayList<>(builder.categories));
     }
@@ -111,8 +111,8 @@ public class FileCategorizer {
             return this;
         }
 
-        public FileCategorizer build() {
-            return new FileCategorizer(this);
+        public ExtensionFileCategorizer build() {
+            return new ExtensionFileCategorizer(this);
         }
     }
 }

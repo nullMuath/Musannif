@@ -1,6 +1,6 @@
 package org.app.musannif.model;
 
-import org.app.musannif.model.category.FileCategorizer;
+import org.app.musannif.model.category.ExtensionFileCategorizer;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -66,7 +66,7 @@ public class FileOrganizer {
      */
     private String sanitizeFolderName(String folderName) {
         if (folderName == null || folderName.isBlank()) {
-            return FileCategorizer.FALLBACK_CATEGORY;
+            return ExtensionFileCategorizer.FALLBACK_CATEGORY;
         }
 
         return folderName.replaceAll("[\\\\/:*?\"<>|]", "_").trim();

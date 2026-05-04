@@ -4,7 +4,7 @@ package org.app.musannif.model.category;
  * Each class is a thin declaration — just a name and an extension list.
  * To expand a category, add extensions to its constructor call.
  * To add a brand-new category, create a new class extending ExtensionCategory
- * (or implementing FileCategory directly) and register it in FileCategorizer.
+ * (or implementing FileCategory directly) and register it in ExtensionFileCategorizer.
  */
 public final class Categories {
 
