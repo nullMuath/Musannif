@@ -1,6 +1,7 @@
 package org.app.musannif.model.category;
 
 import org.app.musannif.model.ScannedFile;
+import org.app.musannif.model.Logger;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -29,7 +30,7 @@ import java.util.stream.Stream;
  * organizer.applyCategorization(result, targetDirectory);
  * }
  */
-public class DateFileCategorizer {
+public class DateFileCategorizer implements FileCategorizer {
 
     private final DatePeriod period;
 
@@ -50,7 +51,6 @@ public class DateFileCategorizer {
      *         strings equals time order)
      */
     public Map<String, List<ScannedFile>> categorize(Collection<ScannedFile> files) {
-        // Use a TreeMap so keys (ISO date strings) are always in chronological order.
         Map<String, List<ScannedFile>> result = new TreeMap<>();
 
         for (ScannedFile file : files) {
@@ -58,6 +58,7 @@ public class DateFileCategorizer {
             result.computeIfAbsent(label, k -> new ArrayList<>()).add(file);
         }
 
+        Logger.getLogger().info("Categorization by date: " + result.size() + " date groups created");
         return result;
     }
     

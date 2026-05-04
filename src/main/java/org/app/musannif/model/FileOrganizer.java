@@ -27,6 +27,7 @@ public class FileOrganizer {
         Objects.requireNonNull(categorizedFiles, "categorizedFiles must not be null");
         Objects.requireNonNull(targetDirectory, "targetDirectory must not be null");
 
+        Logger.getLogger().info("Organization started in: " + targetDirectory);
         Files.createDirectories(targetDirectory);
 
         int movedFiles = 0;
@@ -42,6 +43,7 @@ public class FileOrganizer {
 
             Path categoryDirectory = targetDirectory.resolve(categoryName);
             Files.createDirectories(categoryDirectory);
+            Logger.getLogger().info("Created folder: " + categoryName + " (" + files.size() + " files)");
 
             for (ScannedFile scannedFile : files) {
                 if (scannedFile == null || scannedFile.path() == null || !Files.exists(scannedFile.path())) {
@@ -57,6 +59,7 @@ public class FileOrganizer {
             }
         }
 
+        Logger.getLogger().info("Organization completed: " + movedFiles + " files moved, " + skippedFiles + " skipped");
         return new OrganizationResult(movedFiles, skippedFiles);
     }
 

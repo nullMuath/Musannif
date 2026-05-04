@@ -22,6 +22,7 @@ public class FileScanner {
 
     public List<ScannedFile> scan(Path root) throws IOException {
         List<ScannedFile> results = new ArrayList<>();
+        Logger.getLogger().info("Scanning started at: " + root);
 
         int depth = (maxDepth == -1) ? Integer.MAX_VALUE : maxDepth;
 
@@ -59,11 +60,12 @@ public class FileScanner {
 
                     @Override
                     public FileVisitResult visitFileFailed(Path file, IOException exc) {
-                        System.err.println("Could not access: " + file + " — " + exc.getMessage());
-                        return FileVisitResult.CONTINUE; // skip unreadable files gracefully
+                        Logger.getLogger().info("Could not access: " + file);
+                        return FileVisitResult.CONTINUE;
                     }
                 });
 
+        Logger.getLogger().info("Scan completed: found " + results.size() + " files");
         return results;
     }
 

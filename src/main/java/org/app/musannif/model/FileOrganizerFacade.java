@@ -3,6 +3,8 @@ package org.app.musannif.model;
 import org.app.musannif.model.category.Categories;
 import org.app.musannif.model.category.ExtensionFileCategorizer;
 import org.app.musannif.model.category.FileCategory;
+import org.app.musannif.model.category.FileCategorizer;
+import org.app.musannif.model.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,7 +39,7 @@ import java.util.Objects;
 public class FileOrganizerFacade {
 
     private final FileScanner scanner;
-    private final ExtensionFileCategorizer categorizer;
+    private final FileCategorizer categorizer;
     private final FileOrganizer organizer;
 
     private FileOrganizerFacade(Builder builder) {
@@ -46,11 +48,15 @@ public class FileOrganizerFacade {
                 .maxDepth(builder.maxDepth)
                 .build();
 
-        ExtensionFileCategorizer.Builder categorizerBuilder = new ExtensionFileCategorizer.Builder();
-        for (FileCategory category : builder.categories) {
-            categorizerBuilder.register(category);
+        if (builder.customCategorizer != null) {
+            this.categorizer = builder.customCategorizer;
+        } else {
+            ExtensionFileCategorizer.Builder categorizerBuilder = new ExtensionFileCategorizer.Builder();
+            for (FileCategory category : builder.categories) {
+                categorizerBuilder.register(category);
+            }
+            this.categorizer = categorizerBuilder.build();
         }
-        this.categorizer = categorizerBuilder.build();
 
         this.organizer = new FileOrganizer();
     }
@@ -67,6 +73,7 @@ public class FileOrganizerFacade {
         Objects.requireNonNull(sourceDirectory, "sourceDirectory must not be null");
         Objects.requireNonNull(targetDirectory, "targetDirectory must not be null");
 
+        Logger.getLogger().info("Organization pipeline started");
         List<ScannedFile> files = scanner.scan(sourceDirectory);
         Map<String, List<ScannedFile>> categorized = categorizer.categorize(files);
         return organizer.applyCategorization(categorized, targetDirectory);
@@ -78,6 +85,7 @@ public class FileOrganizerFacade {
         private boolean skipHidden = false;
         private int maxDepth = -1;
         private final List<FileCategory> categories = new ArrayList<>();
+        private FileCategorizer customCategorizer = null;
 
         public Builder skipHidden(boolean skip) {
             this.skipHidden = skip;
@@ -93,6 +101,12 @@ public class FileOrganizerFacade {
         public Builder addCategory(FileCategory category) {
             Objects.requireNonNull(category, "category must not be null");
             this.categories.add(category);
+            return this;
+        }
+
+        public Builder withCategorizer(FileCategorizer categorizer) {
+            Objects.requireNonNull(categorizer, "categorizer must not be null");
+            this.customCategorizer = categorizer;
             return this;
         }
 

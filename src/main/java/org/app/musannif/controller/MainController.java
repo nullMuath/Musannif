@@ -8,6 +8,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.app.musannif.model.*;
+import org.app.musannif.model.category.*;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -25,6 +26,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 public class MainController {
     private ObservableList<ScannedFile> scannedFiles = FXCollections.observableArrayList();
@@ -139,9 +142,7 @@ public class MainController {
     private void handleBrowse(ActionEvent event) {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("Select Folder to Organize");
-        Logger.getLogger().info("Prompt user to select folder");
 
-        // Default to user's home directory
         chooser.setInitialDirectory(new File(System.getProperty("user.home")+"/.musannif-test"));
 
         Stage stage = (Stage) btnBrowse.getScene().getWindow();
@@ -151,8 +152,7 @@ public class MainController {
             txtFolderPath.setText(chosen.getAbsolutePath());
             btnScan.setDisable(false);
             lblStatus.setText("Folder selected. Click Scan Folder to continue.");
-            Logger.getLogger().info("Folder Selected");
-            // Clear any previous results
+            Logger.getLogger().info("Folder selected: " + chosen.getAbsolutePath());
             scannedFiles.clear();
         }
     }
@@ -200,6 +200,37 @@ public class MainController {
         new Thread(scanTask).start();
     }
 
+    private FileCategorizer buildCategorizer() {
+        if (rbDate.isSelected()) {
+            Logger.getLogger().info("Categorizing by: Date (by month)");
+            return new DateFileCategorizer.Builder()
+                    .period(new Periods.ByMonth())
+                    .build();
+        } else if (rbExt.isSelected()) {
+            Logger.getLogger().info("Categorizing by: File extension");
+            ExtensionFileCategorizer.Builder builder = new ExtensionFileCategorizer.Builder();
+            Set<String> seenExtensions = new HashSet<>();
+            for (ScannedFile file : scannedFiles) {
+                String ext = file.extension();
+                if (!ext.isEmpty() && seenExtensions.add(ext)) {
+                    final String extension = ext;
+                    builder.register(new ExtensionCategory(ext, ext) {});
+                }
+            }
+            Logger.getLogger().info("Found " + seenExtensions.size() + " unique file extensions");
+            return builder.build();
+        } else {
+            Logger.getLogger().info("Categorizing by: File type");
+            ExtensionFileCategorizer.Builder builder = new ExtensionFileCategorizer.Builder();
+            builder.register(new Categories.Documents());
+            builder.register(new Categories.Images());
+            builder.register(new Categories.Videos());
+            builder.register(new Categories.Audio());
+            builder.register(new Categories.Archives());
+            return builder.build();
+        }
+    }
+
     @FXML
     private void handleApply(ActionEvent event) throws IOException {
         if (selectedFolder == null || scannedFiles.isEmpty()){
@@ -211,16 +242,17 @@ public class MainController {
         btnScan.setDisable(true);
 
         lblStatus.setText("Organizing");
-        Logger.getLogger().info("Organizing Files in: "+selectedFolder);
+        Logger.getLogger().info("Starting organization of " + scannedFiles.size() + " files");
 
         Task<FileOrganizer.OrganizationResult> organizeTask =
                 new Task<>() {
                     @Override
                     protected FileOrganizer.OrganizationResult call() throws Exception {
+                        FileCategorizer categorizer = buildCategorizer();
                         FileOrganizerFacade facade = new FileOrganizerFacade.Builder()
                                 .skipHidden(true)
                                 .maxDepth(1)
-                                .withDefaultCategories()
+                                .withCategorizer(categorizer)
                                 .build();
                         return facade.organize(selectedFolder, selectedFolder);
                     }
@@ -291,16 +323,16 @@ public class MainController {
         VBox contentBox = new VBox(8);
 
         try {
-            ImageView logo = new ImageView(new Image(MainController.class.getResourceAsStream("/org/app/musannif/icons/app-icon.svg")));
-            logo.setFitHeight(80);
-            logo.setFitWidth(80);
+            ImageView logo = new ImageView(new Image(MainController.class.getResourceAsStream("/org/app/musannif/icons/logo-about.png")));
+            logo.setFitHeight(100);
+            logo.setFitWidth(100);
             logo.setPreserveRatio(true);
             HBox logoContainer = new HBox(logo);
             logoContainer.setAlignment(Pos.CENTER);
-            logoContainer.setPrefHeight(100);
+            logoContainer.setPrefHeight(120);
             contentBox.getChildren().add(logoContainer);
         } catch (Exception e) {
-            // Logo file not found yet, skip
+            Logger.getLogger().info("Could not load logo image: " + e.getMessage());
         }
 
         HBox authors = new HBox(2, authorLink1, new Label("&"), authorLink2);
@@ -311,7 +343,7 @@ public class MainController {
 
         contentBox.getChildren().addAll(
                 new Label("a javafx desktop app that organizes and sorts your files."),
-                new Label("Version 0.2"),
+                new Label("Version 1.0.0"),
                 devLabel,
                 authors,
                 new Separator(),
@@ -340,10 +372,10 @@ public class MainController {
 
     @FXML
     private void handleGenerateTestFiles(ActionEvent event) throws IOException, InterruptedException {
-        Logger.getLogger().info("Generate Test Files Button Clicked");
+        Logger.getLogger().info("Generating test files");
         TestFilesGenerator.generate();
-        lblStatus.setText("Generating Test Files");
-        lblStatus.setText("Files Generated!");
+        lblStatus.setText("Test files generated!");
+        Logger.getLogger().info("Test files generated successfully");
         Desktop.getDesktop().open(new File(System.getProperty("user.home")+"/.musannif-test"));
     }
 

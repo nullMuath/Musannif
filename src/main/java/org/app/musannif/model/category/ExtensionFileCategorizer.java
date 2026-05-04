@@ -1,6 +1,7 @@
 package org.app.musannif.model.category;
 
 import org.app.musannif.model.ScannedFile;
+import org.app.musannif.model.Logger;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -33,7 +34,7 @@ import java.util.stream.Stream;
  * Map<String, List<ScannedFile>> result = categorizer.categorize(files);
  * }</pre>
  */
-public class ExtensionFileCategorizer {
+public class ExtensionFileCategorizer implements FileCategorizer {
 
     public static final String FALLBACK_CATEGORY = "Other";
 
@@ -59,8 +60,6 @@ public class ExtensionFileCategorizer {
      *         files appear under {@value #FALLBACK_CATEGORY}.
      */
     public Map<String, List<ScannedFile>> categorize(Collection<ScannedFile> files) {
-        // Pre-populate map with all known category names so callers always get
-        // a consistent key set, even for empty categories.
         Map<String, List<ScannedFile>> result = new LinkedHashMap<>();
         for (FileCategory cat : categories) {
             result.put(cat.getName(), new ArrayList<>());
@@ -72,6 +71,7 @@ public class ExtensionFileCategorizer {
             result.get(targetCategory).add(file);
         }
 
+        Logger.getLogger().info("Categorization by type: grouped into " + categories.size() + " categories");
         return result;
     }
 
