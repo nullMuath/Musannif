@@ -7,17 +7,17 @@ import java.util.Deque;
 /**
  * Invoker for the Command pattern.
  *
- * <p>Executes {@link FileCommand} objects and keeps a history stack so that
+ * Executes {@link FileCommand} objects and keeps a history stack so that
  * any executed command can be undone in LIFO order.  A redo stack is also
- * maintained so that undone commands can be re-applied.</p>
+ * maintained so that undone commands can be re-applied.
  *
- * <h3>Usage example</h3>
- * <pre>{@code
+ * Usage example
+ * {@code
  * CommandHistory history = new CommandHistory();
  * history.execute(new MoveFileCommand(src, dst));
  * history.undo();   // moves the file back
  * history.redo();   // moves it again
- * }</pre>
+ * }
  */
 public class CommandHistory {
 

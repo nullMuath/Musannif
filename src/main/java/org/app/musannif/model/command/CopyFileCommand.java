@@ -8,9 +8,9 @@ import java.nio.file.StandardCopyOption;
 /**
  * Command pattern — encapsulates a single file-copy operation.
  *
- * <p>{@link #execute()} copies {@code source → destination} (parent directories
+ * {@link #execute()} copies {@code source → destination} (parent directories
  * are created if they don't exist).
- * {@link #undo()} deletes the copy at {@code destination}.</p>
+ * {@link #undo()} deletes the copy at {@code destination}.
  */
 public class CopyFileCommand implements FileCommand {
 

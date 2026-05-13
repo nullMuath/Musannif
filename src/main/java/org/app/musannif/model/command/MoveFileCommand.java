@@ -8,8 +8,8 @@ import java.nio.file.StandardCopyOption;
 /**
  * Command pattern — encapsulates a single file-move operation.
  *
- * <p>{@link #execute()} moves {@code source → destination}.
- * {@link #undo()} moves it back {@code destination → source}.</p>
+ * {@link #execute()} moves {@code source → destination}.
+ * {@link #undo()} moves it back {@code destination → source}.
  */
 public class MoveFileCommand implements FileCommand {
 

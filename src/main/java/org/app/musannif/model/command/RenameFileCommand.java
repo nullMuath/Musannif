@@ -8,8 +8,8 @@ import java.nio.file.StandardCopyOption;
 /**
  * Command pattern — encapsulates a single file-rename (or same-directory move).
  *
- * <p>{@link #execute()} renames {@code source} to {@code destination}.
- * {@link #undo()} renames it back.</p>
+ * {@link #execute()} renames {@code source} to {@code destination}.
+ * {@link #undo()} renames it back.
  */
 public class RenameFileCommand implements FileCommand {
 

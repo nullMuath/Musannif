@@ -259,26 +259,26 @@ public class MainController {
                 };
 
 
-                   organizeTask.setOnSucceeded(e -> {
-                       FileOrganizer.OrganizationResult result = organizeTask.getValue();
-                       if (rbIcon.isSelected())
-                           helperMethods.addFolderIcons(selectedFolder);
-                       scannedFiles.clear();
-                       btnScan.setDisable(false);
-                       btnApply.setDisable(false);
-                       lblStatus.setText("Done —" + result.movedFiles() + " files, " + result.skippedFiles() + " skipped.");
-                       Logger.getLogger().info("Organization Complete: "+ result.movedFiles() + " files moved, " + result.skippedFiles() + " skipped.");
-                   });
+        organizeTask.setOnSucceeded(e -> {
+            FileOrganizer.OrganizationResult result = organizeTask.getValue();
+            if (rbIcon.isSelected())
+                helperMethods.addFolderIcons(selectedFolder);
+            scannedFiles.clear();
+            btnScan.setDisable(false);
+            btnApply.setDisable(false);
+            lblStatus.setText("Done —" + result.movedFiles() + " files, " + result.skippedFiles() + " skipped.");
+            Logger.getLogger().info("Organization Complete: "+ result.movedFiles() + " files moved, " + result.skippedFiles() + " skipped.");
+        });
 
-                   organizeTask.setOnFailed(e -> {
-                       btnScan.setDisable(false);
-                       btnApply.setDisable(false);
-                       lblStatus.setText("Organization Failed: " + organizeTask.getException().getMessage());
-                       Logger.getLogger().info("Organization Failed: "+ organizeTask.getException().getMessage());
-                   });
+        organizeTask.setOnFailed(e -> {
+            btnScan.setDisable(false);
+            btnApply.setDisable(false);
+            lblStatus.setText("Organization Failed: " + organizeTask.getException().getMessage());
+            Logger.getLogger().info("Organization Failed: "+ organizeTask.getException().getMessage());
+        });
 
-                   Desktop.getDesktop().open((selectedFolder).toFile());
-                   new Thread(organizeTask).start();
+        Desktop.getDesktop().open((selectedFolder).toFile());
+        new Thread(organizeTask).start();
 
 
 
@@ -397,4 +397,3 @@ public class MainController {
         stage.close();
     }
 }
-
