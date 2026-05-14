@@ -22,6 +22,8 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.animation.ScaleTransition;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.DirectoryChooser;
@@ -29,6 +31,7 @@ import javafx.stage.Stage;
 
 import org.app.musannif.model.history.OperationHistory;
 import org.app.musannif.model.history.OperationRecord;
+import org.app.musannif.model.history.SnapshotManager;
 import org.app.musannif.util.FileIconCache;
 
 import java.awt.*;
@@ -39,7 +42,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedHashMap;
 
 /**
  * Main controller for the Musannif JavaFX application.
@@ -96,6 +98,19 @@ public class MainController {
     public void setBtnTogglePreviewDisabled(boolean disabled) { btnTogglePreview.setDisable(disabled); }
     public void setStatus(String text)                { lblStatus.setText(text); }
 
+    public void markSuccess() {
+        doneOverlay.setManaged(true);
+        doneOverlay.setVisible(true);
+        tablePreviewContainer.setManaged(false);
+        tablePreviewContainer.setVisible(false);
+        ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(500), doneOverlay);
+        st.setFromX(0.8); st.setFromY(0.8);
+        st.setToX(1.0); st.setToY(1.0);
+        st.setAutoReverse(true);
+        st.setCycleCount(2);
+        st.play();
+    }
+
     // -------------------------------------------------------------------------
     //  Model
     // -------------------------------------------------------------------------
@@ -144,29 +159,40 @@ public class MainController {
     @FXML private VBox        previewPanel;
     @FXML private Separator   previewSeparator;
     @FXML private Button      btnTogglePreview;
-    @FXML private Label       lblPreviewMethod;
-    @FXML private Label       lblDestPath;
-    @FXML private TreeView<String> treePreview;
-    @FXML private Label       lblPreviewSummary;
-    @FXML private Label       lblTotalSize;
-    @FXML private FlowPane    legendBar;
-    @FXML private ProgressBar scanProgress;
-    @FXML private HBox        statusBar;
-    @FXML private HBox        navOrganize;
-    @FXML private HBox        navHistory;
-    @FXML private Label       navOrganizeIcon;
-    @FXML private Label       navOrganizeLabel;
-    @FXML private Label       navHistoryIcon;
-    @FXML private Label       navHistoryLabel;
-    @FXML private VBox        organizePage;
-    @FXML private VBox        historyPage;
+    @FXML private Button      btnOpenFolder;
+    @FXML private VBox        doneOverlay;
+    @FXML private Label       lblDoneIcon;
+    @FXML private Label       lblDoneText;
+    @FXML private Label       lblDoneSummary;
+
+    // History page
     @FXML private TableView<OperationRecord> historyTable;
     @FXML private TableColumn<OperationRecord, String> colHistTime;
     @FXML private TableColumn<OperationRecord, String> colHistFolder;
     @FXML private TableColumn<OperationRecord, String> colHistMode;
     @FXML private TableColumn<OperationRecord, String> colHistMoved;
     @FXML private TableColumn<OperationRecord, String> colHistSkipped;
-    @FXML private Button      btnClearHistory;
+    @FXML private Button btnRestoreOperation;
+
+    // Sidebar navigation
+    @FXML private HBox navOrganize;
+    @FXML private HBox navHistory;
+    @FXML private Label navOrganizeIcon;
+    @FXML private Label navOrganizeLabel;
+    @FXML private Label navHistoryIcon;
+    @FXML private Label navHistoryLabel;
+
+    // Page containers
+    @FXML private VBox organizePage;
+    @FXML private VBox historyPage;
+
+    // Preview panel
+    @FXML private TreeView<String> treePreview;
+    @FXML private Label lblPreviewMethod;
+    @FXML private Label lblPreviewSummary;
+    @FXML private Label lblTotalSize;
+    @FXML private Label lblDestPath;
+    @FXML private FlowPane legendBar;
 
     private double xOffset = 0;
     private double yOffset = 0;
@@ -233,6 +259,22 @@ public class MainController {
             row.setContextMenu(ctx);
             return row;
         });
+ 
+        historyTable.setRowFactory(tv -> {
+            TableRow<OperationRecord> row = new TableRow<>();
+            row.setOnMouseClicked(e -> {
+                if (e.getClickCount() == 2 && !row.isEmpty()) {
+                    handleShowDetails(row.getItem());
+                }
+            });
+            row.itemProperty().addListener((obs, old, item) -> {
+                if (item == null) return;
+                boolean restorable = SnapshotManager.isRestorable(item);
+                row.getStyleClass().removeAll("history-row-spent");
+                if (!restorable) row.getStyleClass().add("history-row-spent");
+            });
+            return row;
+        });
 
         setupTitleBarDrag();
         setupPreviewResize();
@@ -247,6 +289,13 @@ public class MainController {
         rbExt.selectedProperty().addListener(modeListener);
 
         setupHistoryTable();
+        SnapshotManager.loadAll();
+        btnRestoreOperation.setDisable(true);
+        historyTable.getSelectionModel().selectedItemProperty().addListener((obs, old, selected) -> {
+            boolean restorable = selected != null && SnapshotManager.isRestorable(selected);
+            btnRestoreOperation.setDisable(!restorable);
+            if (selected != null && !restorable) Platform.runLater(() -> historyTable.getSelectionModel().clearSelection());
+        });
         Logger.getLogger().info("Application Started");
         transitionTo(new IdleState());
     }
@@ -268,6 +317,11 @@ public class MainController {
             selectedFolder = chosen.toPath();
             txtFolderPath.setText(chosen.getAbsolutePath());
             scannedFiles.clear();
+            btnOpenFolder.setVisible(true);
+            doneOverlay.setManaged(false);
+            doneOverlay.setVisible(false);
+            tablePreviewContainer.setManaged(true);
+            tablePreviewContainer.setVisible(true);
             Logger.getLogger().info("Folder Selected: " + selectedFolder);
             currentState.onBrowse(this);
         }
@@ -368,10 +422,19 @@ public class MainController {
                     + result.movedFiles() + " moved, " + result.skippedFiles() + " skipped");
 
             // record this operation in session history
+            Instant now = Instant.now();
             OperationHistory.getInstance().add(
-                    Instant.now(), selectedFolder, organizeMode,
+                    now, selectedFolder, organizeMode,
                     result.movedFiles(), result.skippedFiles());
+            try {
+                SnapshotManager.save(now, selectedFolder, organizeMode,
+                        result.movedFiles(), result.skippedFiles(),
+                        lastOrganizer.getLastMemento());
+            } catch (IOException ex) {
+                Logger.getLogger().info("Failed to save snapshot: " + ex.getMessage());
+            }
 
+            lblDoneSummary.setText(result.movedFiles() + " files moved, " + result.skippedFiles() + " skipped");
             transitionTo(new DoneState(result.movedFiles(), result.skippedFiles()));
         });
         organizeTask.setOnFailed(e -> {
@@ -380,7 +443,6 @@ public class MainController {
             transitionTo(new CategorizedState(scannedFiles.size()));
         });
 
-        Desktop.getDesktop().open(selectedFolder.toFile());
         new Thread(organizeTask).start();
     }
 
@@ -635,6 +697,15 @@ public class MainController {
     }
 
     @FXML
+    private void handleOpenFolder(ActionEvent event) {
+        try {
+            Desktop.getDesktop().open(selectedFolder.toFile());
+        } catch (IOException ex) {
+            setStatus("Failed to open folder: " + ex.getMessage());
+        }
+    }
+
+    @FXML
     private void handleNavOrganize(MouseEvent event) {
         organizePage.setManaged(true);
         organizePage.setVisible(true);
@@ -667,11 +738,82 @@ public class MainController {
     }
 
     @FXML
-    private void handleClearHistory(ActionEvent event) {
-        OperationHistory.getInstance().clear();
-        refreshHistoryTable();
-        setStatus("History cleared.");
+    private void handleRestoreOperation(ActionEvent event) {
+        OperationRecord selected = historyTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            setStatus("Select an operation to restore.");
+            return;
+        }
+        try {
+            OrganizationMemento memento = SnapshotManager.loadMemento(selected);
+            if (memento == null) {
+                setStatus("Snapshot file not found for this operation.");
+                return;
+            }
+
+            memento.restore();
+            SnapshotManager.delete(selected);
+
+            refreshHistoryTable();
+            setStatus("Operation undone.");
+        } catch (IOException ex) {
+            setStatus("Restore failed: " + ex.getMessage());
+            Logger.getLogger().info("Restore failed: " + ex.getMessage());
+        }
     }
+
+    private void handleShowDetails(OperationRecord record) {
+        List<String[]> mappings;
+        try {
+            mappings = SnapshotManager.loadFileMappings(record);
+        } catch (IOException e) {
+            setStatus("Failed to load snapshot details: " + e.getMessage());
+            return;
+        }
+
+        TableView<String[]> fileTable = new TableView<>();
+        fileTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        fileTable.setPrefHeight(350);
+        fileTable.getStyleClass().add("file-table");
+
+        TableColumn<String[], String> colOrig = new TableColumn<>("ORIGINAL LOCATION");
+        colOrig.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue()[1]));
+
+        TableColumn<String[], String> colNew = new TableColumn<>("NEW LOCATION");
+        colNew.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue()[0]));
+
+        fileTable.getColumns().addAll(colOrig, colNew);
+        fileTable.getItems().addAll(mappings);
+
+        Label header = new Label("\uD83D\uDCCB  Operation: " + record.mode());
+        header.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:14px;-fx-font-weight:bold;");
+
+        Label timestamp = new Label("Date/Time: " + record.formattedTimestamp());
+        timestamp.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:12px;");
+        Label folder = new Label("Folder: " + record.sourceFolder().toAbsolutePath().normalize());
+        folder.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:12px;");
+        Label summary = new Label(record.filesMoved() + " moved \u00B7 " + record.filesSkipped() + " skipped \u00B7 " + mappings.size() + " files total");
+        summary.setStyle("-fx-text-fill:#4ADE80;-fx-font-size:12px;");
+
+        Separator sep = new Separator();
+        sep.setStyle("-fx-background-color:#2E3244;");
+
+        VBox content = new VBox(8, header, timestamp, folder, summary, sep, fileTable);
+        content.setPrefWidth(720);
+
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.setTitle("Operation Details");
+        alert.setHeaderText(null);
+        alert.getDialogPane().setContent(content);
+        alert.getDialogPane().getStyleClass().add("modal-root");
+        alert.getDialogPane().setPrefWidth(740);
+        alert.getDialogPane().setPrefHeight(520);
+        alert.getButtonTypes().add(ButtonType.CLOSE);
+        alert.showAndWait();
+    }
+
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
 
     @FXML
@@ -752,6 +894,7 @@ public class MainController {
         ObservableList<OperationRecord> items = historyTable.getItems();
         items.setAll(history.getAll());
         FXCollections.sort(items, (a, b) -> b.timestamp().compareTo(a.timestamp()));
+        btnRestoreOperation.setDisable(true);
     }
 
     private void setupTitleBarDrag() {

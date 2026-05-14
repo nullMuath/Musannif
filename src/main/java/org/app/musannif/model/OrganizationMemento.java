@@ -75,6 +75,11 @@ public final class OrganizationMemento {
                         + destination);
             }
         }
+        // Remove empty category directories that were created during organization
+        destinationToSource.keySet().stream()
+                .map(Path::getParent)
+                .distinct()
+                .forEach(dir -> { try { java.nio.file.Files.delete(dir); } catch (java.io.IOException ignored) {} });
     }
 
     /** @return when this snapshot was taken */
@@ -82,6 +87,21 @@ public final class OrganizationMemento {
 
     /** @return number of file moves recorded in this snapshot */
     public int size() { return destinationToSource.size(); }
+
+    /**
+     * Returns the underlying destination→source mapping.
+     * The returned map is unmodifiable.
+     */
+    public Map<Path, Path> getDestinationToSource() { return destinationToSource; }
+
+    /**
+     * Reconstructs a memento from a pre-built destination→source map.
+     * Used by {@link org.app.musannif.model.history.SnapshotManager}
+     * when loading snapshots from disk.
+     */
+    public static OrganizationMemento fromMap(Map<Path, Path> map) {
+        return new OrganizationMemento(map);
+    }
 
     // -------------------------------------------------------------------------
     //  Nested record — used when capturing the memento

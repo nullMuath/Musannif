@@ -4,6 +4,7 @@ target/
 !**/src/test/**/target/
 
 AGENTS.md
+musannif-snapshots/
 
 # Log files
 *.log

@@ -128,6 +128,11 @@
     -fx-font-weight: 500;
 }
 
+/* Spent history row (restored or snapshot missing) */
+.history-row-spent {
+    -fx-opacity: 0.35;
+}
+
 /* ══════════════════════════════════════════════════════════════════
    MAIN CONTENT
 ══════════════════════════════════════════════════════════════════ */

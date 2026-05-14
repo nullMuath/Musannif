@@ -21,6 +21,7 @@ public class DoneState implements AppState {
         ctx.setBtnScanDisabled(false);
         ctx.setBtnApplyDisabled(true);
         ctx.setBtnTogglePreviewDisabled(true);
-        ctx.setStatus("Done — " + movedFiles + " files moved, " + skippedFiles + " skipped.");
+        ctx.setStatus("✓ Done — " + movedFiles + " files moved, " + skippedFiles + " skipped.");
+        ctx.markSuccess();
     }
 }

@@ -19,7 +19,7 @@
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="800" maxWidth="1400" minHeight="800" minWidth="1400" prefHeight="800" prefWidth="1400" styleClass="root-pane" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
+<BorderPane maxHeight="800" maxWidth="1400" minHeight="800" minWidth="1400" prefHeight="800" prefWidth="1400" styleClass="root-pane" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
 
     <!-- ToggleGroup defined here so it is accessible across the whole scene -->
     <fx:define>
@@ -138,6 +138,13 @@
                 </HBox>
             </VBox>
 
+            <!-- ── Done overlay (shown after organize) ──────── -->
+            <VBox fx:id="doneOverlay" alignment="CENTER" managed="false" spacing="8" visible="false" VBox.vgrow="ALWAYS">
+                <Label fx:id="lblDoneIcon" alignment="CENTER" style="-fx-font-size:72px;" text="✓" />
+                <Label fx:id="lblDoneText" alignment="CENTER" style="-fx-font-size:36px;-fx-font-weight:bold;-fx-text-fill:#4ADE80;" text="Done!" />
+                <Label fx:id="lblDoneSummary" alignment="CENTER" style="-fx-text-fill:#7B82A0;-fx-font-size:14px;" />
+            </VBox>
+
             <!-- ── File table + Preview panel ───────────────── -->
             <HBox fx:id="tablePreviewContainer" VBox.vgrow="ALWAYS">
                 <VBox.margin><Insets bottom="0" left="14" right="14" top="10" /></VBox.margin>
@@ -208,7 +215,7 @@
                         <Label minWidth="60" styleClass="field-label" text="History" />
                         <Label style="-fx-text-fill:#7B82A0;-fx-font-size:13px;" text="Past organize operations" />
                         <Region HBox.hgrow="ALWAYS" />
-                        <Button fx:id="btnClearHistory" onAction="#handleClearHistory" prefHeight="30" styleClass="btn-filled" text="Clear History" />
+                        <Button fx:id="btnRestoreOperation" onAction="#handleRestoreOperation" prefHeight="30" styleClass="btn-success" text="↩ Undo Operation" />
                     </HBox>
                 </VBox>
 
@@ -233,6 +240,8 @@
                 <padding><Insets left="14" right="14" /></padding>
 
                 <Label fx:id="lblStatus" styleClass="status-label" text="Select a folder to get started" HBox.hgrow="ALWAYS" />
+
+                <Button fx:id="btnOpenFolder" onAction="#handleOpenFolder" styleClass="btn-toggle-preview" text="Open Folder" visible="false" />
 
                 <Button fx:id="btnTogglePreview" onAction="#handlePreview" styleClass="btn-toggle-preview" text="Show preview" visible="false" />
 
