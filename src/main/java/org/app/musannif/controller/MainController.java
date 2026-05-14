@@ -23,6 +23,7 @@ import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.event.ActionEvent;
+import javafx.scene.input.MouseEvent;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
@@ -124,7 +125,6 @@ public class MainController {
     @FXML private Button     btnApply;
     @FXML private Label      lblStatus;
     @FXML private Button     btnGenerateTestFiles;
-    @FXML private Button     btnHistory;
     @FXML private HBox       titleBar;
     @FXML private Button     btnMinimize;
     @FXML private Button     btnMaximize;
@@ -152,6 +152,21 @@ public class MainController {
     @FXML private FlowPane    legendBar;
     @FXML private ProgressBar scanProgress;
     @FXML private HBox        statusBar;
+    @FXML private HBox        navOrganize;
+    @FXML private HBox        navHistory;
+    @FXML private Label       navOrganizeIcon;
+    @FXML private Label       navOrganizeLabel;
+    @FXML private Label       navHistoryIcon;
+    @FXML private Label       navHistoryLabel;
+    @FXML private VBox        organizePage;
+    @FXML private VBox        historyPage;
+    @FXML private TableView<OperationRecord> historyTable;
+    @FXML private TableColumn<OperationRecord, String> colHistTime;
+    @FXML private TableColumn<OperationRecord, String> colHistFolder;
+    @FXML private TableColumn<OperationRecord, String> colHistMode;
+    @FXML private TableColumn<OperationRecord, String> colHistMoved;
+    @FXML private TableColumn<OperationRecord, String> colHistSkipped;
+    @FXML private Button      btnClearHistory;
 
     private double xOffset = 0;
     private double yOffset = 0;
@@ -231,6 +246,7 @@ public class MainController {
         rbDate.selectedProperty().addListener(modeListener);
         rbExt.selectedProperty().addListener(modeListener);
 
+        setupHistoryTable();
         Logger.getLogger().info("Application Started");
         transitionTo(new IdleState());
     }
@@ -618,65 +634,43 @@ public class MainController {
         }
     }
 
-    @FXML private void handleOrganize(ActionEvent event) { System.out.println("Organize clicked"); }
-    /** show a dialog listing all past organize operations. */
     @FXML
-    private void handleHistory(ActionEvent event) {
-        List<OperationRecord> history = OperationHistory.getInstance().getAll();
+    private void handleNavOrganize(MouseEvent event) {
+        organizePage.setManaged(true);
+        organizePage.setVisible(true);
+        historyPage.setManaged(false);
+        historyPage.setVisible(false);
 
-        if (history.isEmpty()) {
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Operations History");
-            alert.setHeaderText("No operations yet");
-            alert.setContentText("Run an organize operation first.");
-            alert.showAndWait();
-            return;
-        }
+        navOrganize.getStyleClass().add("nav-item-active");
+        navHistory.getStyleClass().remove("nav-item-active");
+        navOrganizeIcon.getStyleClass().setAll("nav-icon-active");
+        navOrganizeLabel.getStyleClass().setAll("nav-label-active");
+        navHistoryIcon.getStyleClass().setAll("nav-icon");
+        navHistoryLabel.getStyleClass().setAll("nav-label");
+    }
 
-        // Build a TableView with one row per operation
-        TableView<OperationRecord> table = new TableView<>();
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.setPrefHeight(300);
+    @FXML
+    private void handleNavHistory(MouseEvent event) {
+        historyPage.setManaged(true);
+        historyPage.setVisible(true);
+        organizePage.setManaged(false);
+        organizePage.setVisible(false);
 
-        TableColumn<OperationRecord, String> colTime = new TableColumn<>("Date / Time");
-        colTime.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().formattedTimestamp()));
+        navHistory.getStyleClass().add("nav-item-active");
+        navOrganize.getStyleClass().remove("nav-item-active");
+        navHistoryIcon.getStyleClass().setAll("nav-icon-active");
+        navHistoryLabel.getStyleClass().setAll("nav-label-active");
+        navOrganizeIcon.getStyleClass().setAll("nav-icon");
+        navOrganizeLabel.getStyleClass().setAll("nav-label");
 
-        TableColumn<OperationRecord, String> colFolder = new TableColumn<>("Folder");
-        colFolder.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().sourceFolder().getFileName().toString()));
+        refreshHistoryTable();
+    }
 
-        TableColumn<OperationRecord, String> colMode = new TableColumn<>("Mode");
-        colMode.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().mode()));
-
-        TableColumn<OperationRecord, String> colMoved = new TableColumn<>("Moved");
-        colMoved.setCellValueFactory(cd ->
-                new SimpleStringProperty(String.valueOf(cd.getValue().filesMoved())));
-
-        TableColumn<OperationRecord, String> colSkipped = new TableColumn<>("Skipped");
-        colSkipped.setCellValueFactory(cd ->
-                new SimpleStringProperty(String.valueOf(cd.getValue().filesSkipped())));
-
-        //noinspection unchecked
-        table.getColumns().addAll(colTime, colFolder, colMode, colMoved, colSkipped);
-        table.getItems().addAll(history);
-
-        // Most recent at the top
-        table.getItems().sort((a, b) -> b.timestamp().compareTo(a.timestamp()));
-
-        Label header = new Label("Past organize operations  (" + history.size() + " total)");
-
-        VBox content = new VBox(8, header, table);
-        content.setPrefWidth(620);
-
-        Alert alert = new Alert(Alert.AlertType.NONE);
-        alert.setTitle("Operations History");
-        alert.setHeaderText(null);
-        alert.getDialogPane().setContent(content);
-        alert.getDialogPane().setPrefWidth(640);
-        alert.getButtonTypes().add(ButtonType.CLOSE);
-        alert.showAndWait();
+    @FXML
+    private void handleClearHistory(ActionEvent event) {
+        OperationHistory.getInstance().clear();
+        refreshHistoryTable();
+        setStatus("History cleared.");
     }
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
 
@@ -739,6 +733,26 @@ public class MainController {
     }
 
     // -------------------------------------------------------------------------
+
+    private void setupHistoryTable() {
+        colHistTime.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().formattedTimestamp()));
+        colHistFolder.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().sourceFolder().getFileName().toString()));
+        colHistMode.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().mode()));
+        colHistMoved.setCellValueFactory(cd ->
+                new SimpleStringProperty(String.valueOf(cd.getValue().filesMoved())));
+        colHistSkipped.setCellValueFactory(cd ->
+                new SimpleStringProperty(String.valueOf(cd.getValue().filesSkipped())));
+    }
+
+    private void refreshHistoryTable() {
+        OperationHistory history = OperationHistory.getInstance();
+        ObservableList<OperationRecord> items = historyTable.getItems();
+        items.setAll(history.getAll());
+        FXCollections.sort(items, (a, b) -> b.timestamp().compareTo(a.timestamp()));
+    }
 
     private void setupTitleBarDrag() {
         titleBar.setOnMousePressed(e -> { xOffset = e.getSceneX(); yOffset = e.getSceneY(); });

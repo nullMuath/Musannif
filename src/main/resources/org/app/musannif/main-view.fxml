@@ -73,17 +73,17 @@
             </Label>
 
             <!-- Organize (active) -->
-            <HBox fx:id="navOrganize" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item,nav-item-active">
+            <HBox fx:id="navOrganize" onMouseClicked="#handleNavOrganize" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item,nav-item-active">
                 <padding><Insets left="17" right="20" /></padding>
-                <Label styleClass="nav-icon-active" text="⧉" />
-                <Label styleClass="nav-label-active" text="Organize" />
+                <Label fx:id="navOrganizeIcon" styleClass="nav-icon-active" text="⧉" />
+                <Label fx:id="navOrganizeLabel" styleClass="nav-label-active" text="Organize" />
             </HBox>
 
             <!-- History -->
-            <HBox fx:id="navHistory" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item">
+            <HBox fx:id="navHistory" onMouseClicked="#handleNavHistory" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item">
                 <padding><Insets left="20" right="20" /></padding>
-                <Label styleClass="nav-icon" text="⏱" />
-                <Label styleClass="nav-label" text="History" />
+                <Label fx:id="navHistoryIcon" styleClass="nav-icon" text="⏱" />
+                <Label fx:id="navHistoryLabel" styleClass="nav-label" text="History" />
             </HBox>
 
             <!-- Push rest to bottom -->
@@ -100,8 +100,9 @@
     ════════════════════════════════════════════════════════════ -->
     <center>
         <VBox styleClass="main-content">
+            <VBox fx:id="organizePage" VBox.vgrow="ALWAYS">
 
-            <!-- ── Controls card ─────────────────────────────── -->
+                <!-- ── Controls card ─────────────────────────────── -->
             <VBox spacing="10" styleClass="controls-card">
                 <padding><Insets bottom="12" left="14" right="14" top="12" /></padding>
                 <VBox.margin><Insets bottom="0" left="14" right="14" top="14" /></VBox.margin>
@@ -194,6 +195,38 @@
 
                 </VBox>
             </HBox>
+
+            </VBox>
+
+            <!-- ── History Page ──────────────────────────────────── -->
+            <VBox fx:id="historyPage" managed="false" visible="false" VBox.vgrow="ALWAYS">
+
+                <VBox spacing="10" styleClass="controls-card">
+                    <padding><Insets bottom="12" left="14" right="14" top="12" /></padding>
+                    <VBox.margin><Insets bottom="0" left="14" right="14" top="14" /></VBox.margin>
+                    <HBox alignment="CENTER_LEFT" spacing="10">
+                        <Label minWidth="60" styleClass="field-label" text="History" />
+                        <Label style="-fx-text-fill:#7B82A0;-fx-font-size:13px;" text="Past organize operations" />
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button fx:id="btnClearHistory" onAction="#handleClearHistory" prefHeight="30" styleClass="btn-filled" text="Clear History" />
+                    </HBox>
+                </VBox>
+
+                <TableView fx:id="historyTable" styleClass="file-table" VBox.vgrow="ALWAYS">
+                    <VBox.margin><Insets bottom="0" left="14" right="14" top="10" /></VBox.margin>
+                    <placeholder>
+                        <Label styleClass="empty-state-label" text="No operations yet. Run an organize operation first." />
+                    </placeholder>
+                    <columns>
+                        <TableColumn fx:id="colHistTime" minWidth="140" prefWidth="180" text="DATE / TIME" />
+                        <TableColumn fx:id="colHistFolder" minWidth="100" prefWidth="160" text="FOLDER" />
+                        <TableColumn fx:id="colHistMode" minWidth="80" prefWidth="120" text="MODE" />
+                        <TableColumn fx:id="colHistMoved" minWidth="60" prefWidth="100" text="MOVED" />
+                        <TableColumn fx:id="colHistSkipped" minWidth="60" prefWidth="100" text="SKIPPED" />
+                    </columns>
+                </TableView>
+
+            </VBox>
 
             <!-- ── Status bar ─────────────────────────────────── -->
             <HBox fx:id="statusBar" alignment="CENTER_LEFT" prefHeight="33" spacing="10" styleClass="status-bar">
