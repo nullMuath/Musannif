@@ -9,6 +9,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.app.musannif.model.*;
+import org.app.musannif.model.category.*;
 import org.app.musannif.model.command.CommandHistory;
 import org.app.musannif.model.state.*;
 import javafx.beans.property.SimpleStringProperty;
@@ -27,20 +28,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Main controller for the Musannif JavaFX application.
  *
- * Design patterns wired here
- * 
- *   State — {@link #currentState} delegates all button
- *       enable/disable decisions; this controller just calls
- *       {@link #transitionTo(AppState)}.
- *   Command + Memento — a single {@link CommandHistory} is
- *       shared with {@link FileOrganizerFacade}.  After organizing,
- *       {@link #handleUndoAll} calls {@link OrganizationMemento#restore()} for
- *       bulk undo; {@link #handleUndo}/{@link #handleRedo} undo single moves.
- *
+ * Design patterns wired here:
+ *   State   — currentState delegates all button enable/disable decisions.
+ *   Command — a single CommandHistory is shared with FileOrganizerFacade.
+ *   Memento — after organizing, handleUndoAll() calls OrganizationMemento.restore().
  */
 public class MainController {
 
@@ -55,27 +51,26 @@ public class MainController {
         newState.onEnter(this);
     }
 
-    // Setters called by state objects
     public void setBtnScanDisabled(boolean disabled)  { btnScan.setDisable(disabled); }
     public void setBtnApplyDisabled(boolean disabled) { btnApply.setDisable(disabled); }
     public void setStatus(String text)                { lblStatus.setText(text); }
 
     // -------------------------------------------------------------------------
-    //  Model — ONE shared CommandHistory so Facade and controller use the same stack
+    //  Model
     // -------------------------------------------------------------------------
 
     private ObservableList<ScannedFile> scannedFiles = FXCollections.observableArrayList();
     private Path selectedFolder;
 
     /**
-     * Shared command history.  Passed into every {@link FileOrganizerFacade}
-     * instance so undo/redo in this controller always targets the right stack.
+     * Shared CommandHistory — passed into every FileOrganizerFacade instance
+     * so undo/redo in this controller always targets the right stack.
      */
     private final CommandHistory commandHistory = new CommandHistory();
 
     /**
-     * Holds a reference to the organizer created by the most recent facade
-     * build, so we can reach {@code getLastMemento()} after organizing.
+     * Reference to the organizer from the most recent facade build,
+     * so we can reach getLastMemento() after organizing.
      */
     private FileOrganizer lastOrganizer = null;
 
@@ -146,8 +141,6 @@ public class MainController {
 
         setupTitleBarDrag();
         Logger.getLogger().info("Application Started");
-
-        // Enter the initial state — sets button enable/disable via State pattern
         transitionTo(new IdleState());
     }
 
@@ -168,8 +161,7 @@ public class MainController {
             selectedFolder = chosen.toPath();
             txtFolderPath.setText(chosen.getAbsolutePath());
             scannedFiles.clear();
-            Logger.getLogger().info("Folder Selected");
-            // Delegate to the current state — it knows the right next state
+            Logger.getLogger().info("Folder Selected: " + selectedFolder);
             currentState.onBrowse(this);
         }
     }
@@ -181,26 +173,25 @@ public class MainController {
             return;
         }
         scannedFiles.clear();
-        currentState.onScan(this);   // → ScanningState (disables buttons)
-        Logger.getLogger().info("Folders scanning");
+        currentState.onScan(this);
+        Logger.getLogger().info("Scanning folder: " + selectedFolder);
 
         Task<List<ScannedFile>> scanTask = new Task<>() {
             @Override
             protected List<ScannedFile> call() throws Exception {
                 FileScanner scanner = new FileScanner.Builder()
                         .skipHidden(true).maxDepth(1).build();
-                Logger.getLogger().info("FileScanner Object Created");
                 return scanner.scan(selectedFolder);
             }
         };
 
         scanTask.setOnSucceeded(e -> {
             scannedFiles.addAll(scanTask.getValue());
-            Logger.getLogger().info("Folder scanning Complete");
+            Logger.getLogger().info("Scan complete: " + scannedFiles.size() + " files found");
             transitionTo(new CategorizedState(scannedFiles.size()));
         });
         scanTask.setOnFailed(e -> {
-            Logger.getLogger().info("Folder scanning Failed");
+            Logger.getLogger().info("Scan failed: " + scanTask.getException().getMessage());
             setStatus("Scan failed: " + scanTask.getException().getMessage());
             transitionTo(new FolderSelectedState());
         });
@@ -213,38 +204,64 @@ public class MainController {
             setStatus("Nothing to organize — scan a folder first.");
             return;
         }
-        currentState.onOrganize(this);   // → OrganizingState
-        Logger.getLogger().info("Organizing Files in: " + selectedFolder);
+        currentState.onOrganize(this);
+        Logger.getLogger().info("Organizing files in: " + selectedFolder);
+
+        // Snapshot the radio-button selection on the FX thread before the task runs
+        final boolean useDate = rbDate != null && rbDate.isSelected();
+        final boolean useExt  = rbExt  != null && rbExt.isSelected();
+        final boolean useIcon = rbIcon != null && rbIcon.isSelected();
 
         Task<FileOrganizer.OrganizationResult> organizeTask = new Task<>() {
             @Override
             protected FileOrganizer.OrganizationResult call() throws Exception {
-                // Build facade with the SHARED CommandHistory so undo/redo works
-                FileOrganizerFacade facade = new FileOrganizerFacade.Builder()
+
+                FileOrganizerFacade.Builder builder = new FileOrganizerFacade.Builder()
                         .skipHidden(true)
                         .maxDepth(1)
-                        .withDefaultCategories()
-                        .commandHistory(commandHistory)   // ← shared history
-                        .build();
+                        .commandHistory(commandHistory);   // ← shared history
 
-                // Keep a reference so we can reach getLastMemento() later
-                lastOrganizer = facade.getOrganizer();
+                if (useDate) {
+                    // By Date — group files by last-modified month
+                    builder.withCategorizer(
+                            new DateFileCategorizer.Builder()
+                                    .period(new Periods.ByMonth())
+                                    .build()
+                    );
+                    Logger.getLogger().info("Organize mode: By Date");
+                } else if (useExt) {
+                    // By Extension — each unique extension becomes its own folder
+                    ExtensionFileCategorizer.Builder extBuilder = new ExtensionFileCategorizer.Builder();
+                    scannedFiles.stream()
+                            .map(ScannedFile::extension)
+                            .filter(ext -> !ext.isBlank())
+                            .distinct()
+                            .forEach(ext -> extBuilder.register(new SingleExtensionCategory(ext)));
+                    builder.withCategorizer(extBuilder.build());
+                    Logger.getLogger().info("Organize mode: By Extension");
+                } else {
+                    // Default (rbType selected or nothing selected): By File Type
+                    builder.withDefaultCategories();
+                    Logger.getLogger().info("Organize mode: By File Type");
+                }
 
+                FileOrganizerFacade facade = builder.build();
+                lastOrganizer = facade.getOrganizer();   // ← save for undo/memento
                 return facade.organize(selectedFolder, selectedFolder);
             }
         };
 
         organizeTask.setOnSucceeded(e -> {
             FileOrganizer.OrganizationResult result = organizeTask.getValue();
-            if (rbIcon.isSelected()) helperMethods.addFolderIcons(selectedFolder);
+            if (useIcon) helperMethods.addFolderIcons(selectedFolder);
             scannedFiles.clear();
-            Logger.getLogger().info("Organization Complete: " + result.movedFiles()
-                    + " files moved, " + result.skippedFiles() + " skipped.");
+            Logger.getLogger().info("Organization complete: "
+                    + result.movedFiles() + " moved, " + result.skippedFiles() + " skipped");
             transitionTo(new DoneState(result.movedFiles(), result.skippedFiles()));
         });
         organizeTask.setOnFailed(e -> {
-            Logger.getLogger().info("Organization Failed: " + organizeTask.getException().getMessage());
-            setStatus("Organization Failed: " + organizeTask.getException().getMessage());
+            Logger.getLogger().info("Organization failed: " + organizeTask.getException().getMessage());
+            setStatus("Organization failed: " + organizeTask.getException().getMessage());
             transitionTo(new CategorizedState(scannedFiles.size()));
         });
 
@@ -259,6 +276,7 @@ public class MainController {
         try {
             commandHistory.undo();
             setStatus("Undo successful. (" + commandHistory.undoSize() + " remaining)");
+            Logger.getLogger().info("Undo performed");
         } catch (IOException ex) {
             setStatus("Undo failed: " + ex.getMessage());
             Logger.getLogger().info("Undo failed: " + ex.getMessage());
@@ -272,13 +290,14 @@ public class MainController {
         try {
             commandHistory.redo();
             setStatus("Redo successful.");
+            Logger.getLogger().info("Redo performed");
         } catch (IOException ex) {
             setStatus("Redo failed: " + ex.getMessage());
             Logger.getLogger().info("Redo failed: " + ex.getMessage());
         }
     }
 
-    /** Undo the entire last organize operation using the Memento snapshot. */
+    /** Undo the entire last organize operation (Memento pattern). */
     @FXML
     private void handleUndoAll(ActionEvent event) {
         if (lastOrganizer == null) { setStatus("No organize operation to undo."); return; }
@@ -286,17 +305,98 @@ public class MainController {
         if (memento == null) { setStatus("No organize operation to undo."); return; }
         try {
             memento.restore();
-            commandHistory.clear();   // stack is now stale after bulk restore
+            commandHistory.clear();   // stack is stale after bulk restore
             setStatus("All " + memento.size() + " file moves undone.");
-            Logger.getLogger().info("Memento restore: " + memento.size() + " files restored.");
+            Logger.getLogger().info("Memento restore: " + memento.size() + " files restored");
         } catch (IOException ex) {
             setStatus("Undo-all failed: " + ex.getMessage());
             Logger.getLogger().info("Memento restore failed: " + ex.getMessage());
         }
     }
 
+    // Show preview tree of what will happen before organizing
+    @FXML
+    private void handlePreview(ActionEvent event) {
+        if (scannedFiles.isEmpty()) {
+            setStatus("Scan a folder first to preview.");
+            return;
+        }
+
+        final boolean useDate = rbDate != null && rbDate.isSelected();
+        final boolean useExt  = rbExt  != null && rbExt.isSelected();
+
+        FileCategorizer categorizer;
+        String modeLabel;
+
+        if (useDate) {
+            categorizer = new DateFileCategorizer.Builder().period(new Periods.ByMonth()).build();
+            modeLabel = "By Date";
+        } else if (useExt) {
+            ExtensionFileCategorizer.Builder eb = new ExtensionFileCategorizer.Builder();
+            scannedFiles.stream()
+                    .map(ScannedFile::extension)
+                    .filter(ext -> !ext.isBlank())
+                    .distinct()
+                    .forEach(ext -> eb.register(new SingleExtensionCategory(ext)));
+            categorizer = eb.build();
+            modeLabel = "By Extension";
+        } else {
+            categorizer = new ExtensionFileCategorizer.Builder()
+                    .register(new Categories.Documents())
+                    .register(new Categories.Images())
+                    .register(new Categories.Videos())
+                    .register(new Categories.Audio())
+                    .register(new Categories.Archives())
+                    .build();
+            modeLabel = "By File Type";
+        }
+
+        Map<String, List<ScannedFile>> categorized = categorizer.categorize(scannedFiles);
+
+        // Build TreeView
+        TreeItem<String> root = new TreeItem<>(selectedFolder.getFileName().toString());
+        root.setExpanded(true);
+        int totalFiles = 0;
+        int otherFiles = 0;
+
+        for (Map.Entry<String, List<ScannedFile>> entry : categorized.entrySet()) {
+            List<ScannedFile> files = entry.getValue();
+            if (files.isEmpty()) continue;
+            TreeItem<String> folderNode = new TreeItem<>(entry.getKey() + "  (" + files.size() + ")");
+            for (ScannedFile f : files) {
+                folderNode.getChildren().add(new TreeItem<>(f.path().getFileName().toString()));
+            }
+            root.getChildren().add(folderNode);
+            totalFiles += files.size();
+            if (entry.getKey().equals(ExtensionFileCategorizer.FALLBACK_CATEGORY)) {
+                otherFiles += files.size();
+            }
+        }
+
+        // Wire into the existing FXML preview panel controls
+        if (treePreview != null) {
+            treePreview.setRoot(root);
+            if (lblPreviewMethod != null) lblPreviewMethod.setText("Mode: " + modeLabel);
+            if (lblPreviewSummary != null)
+                lblPreviewSummary.setText(totalFiles + " files total, " + otherFiles + " uncategorized");
+            if (previewPanel != null) previewPanel.setVisible(true);
+        } else {
+            // Fallback: show in an alert dialog
+            TreeView<String> tree = new TreeView<>(root);
+            tree.setPrefHeight(350);
+            Label summary = new Label(totalFiles + " files total — " + otherFiles + " will go to Other");
+
+            VBox content = new VBox(8, new Label("Mode: " + modeLabel), tree, summary);
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Preview");
+            alert.setHeaderText("Proposed folder structure");
+            alert.getDialogPane().setContent(content);
+            alert.getDialogPane().setPrefWidth(500);
+            alert.showAndWait();
+        }
+    }
+
     @FXML private void handleOrganize(ActionEvent event) { System.out.println("Organize clicked"); }
-    @FXML private void handlePreview(ActionEvent event)  { System.out.println("Preview clicked"); }
     @FXML private void handleHistory(ActionEvent event)  { System.out.println("History clicked"); }
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
 
@@ -358,8 +458,6 @@ public class MainController {
         ((Stage) btnClose.getScene().getWindow()).close();
     }
 
-    // -------------------------------------------------------------------------
-    //  Private helpers
     // -------------------------------------------------------------------------
 
     private void setupTitleBarDrag() {
