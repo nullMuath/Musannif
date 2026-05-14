@@ -12,6 +12,7 @@ public class OrganizingState implements AppState {
     public void onEnter(MainController ctx) {
         ctx.setBtnScanDisabled(true);
         ctx.setBtnApplyDisabled(true);
+        ctx.setBtnTogglePreviewDisabled(true);
         ctx.setStatus("Organizing…");
     }
 }

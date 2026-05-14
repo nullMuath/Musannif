@@ -528,27 +528,31 @@
     -fx-background-color: transparent;
     -fx-text-fill: #7B82A0;
     -fx-font-size: 11px;
-    -fx-padding: 3 8 3 0;
+    -fx-padding: 2 6 2 0;
     -fx-cursor: hand;
+    -fx-cell-size: 30px;
 }
 .preview-tree .tree-cell:hover {
     -fx-background-color: #262A3A;
+    -fx-background-radius: 4;
 }
 .preview-tree .tree-cell:selected {
     -fx-background-color: #2D2B52;
+    -fx-background-radius: 4;
     -fx-text-fill: #E8EAF0;
-}
-/* Category (parent) nodes — bolder accent text */
-.preview-tree-category {
-    -fx-text-fill: #E8EAF0;
-    -fx-font-size: 12px;
-    -fx-font-weight: bold;
 }
 .preview-tree .tree-cell .arrow {
-    -fx-background-color: #7B82A0;
+    -fx-background-color: transparent;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+    -fx-padding: 0;
 }
 .preview-tree .tree-cell:selected .arrow {
-    -fx-background-color: #E8EAF0;
+    -fx-background-color: transparent;
 }
 
 .preview-footer {
@@ -668,4 +672,76 @@
     -fx-text-fill: #7B82A0;
     -fx-font-size: 11.5px;
     -fx-wrap-text: true;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREVIEW RESIZE
+══════════════════════════════════════════════════════════════════ */
+.resize-separator {
+    -fx-border-color: #2E3244;
+    -fx-border-width: 0 1 0 0;
+    -fx-padding: 0 2 0 2;
+    -fx-cursor: col-resize;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREVIEW EXTENSION BADGES
+══════════════════════════════════════════════════════════════════ */
+.ext-badge {
+    -fx-font-family: "Courier New", "Consolas", monospace;
+    -fx-font-size: 9.5px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 5 1 5;
+    -fx-background-radius: 3;
+    -fx-min-width: 34px;
+    -fx-alignment: CENTER;
+}
+.ext-red    { -fx-background-color: #3D1515; -fx-text-fill: #F87171; }
+.ext-green  { -fx-background-color: #143D20; -fx-text-fill: #4ADE80; }
+.ext-blue   { -fx-background-color: #112240; -fx-text-fill: #60A5FA; }
+.ext-orange { -fx-background-color: #3D2010; -fx-text-fill: #FB923C; }
+.ext-yellow { -fx-background-color: #3D3010; -fx-text-fill: #FBBF24; }
+.ext-purple { -fx-background-color: #2A1A3D; -fx-text-fill: #A78BFA; }
+.ext-teal   { -fx-background-color: #0E3028; -fx-text-fill: #34D399; }
+.ext-gray   { -fx-background-color: #252932; -fx-text-fill: #94A3B8; }
+
+/* ══════════════════════════════════════════════════════════════════
+   PREVIEW DESTINATION LABEL
+══════════════════════════════════════════════════════════════════ */
+.dest-section-label {
+    -fx-text-fill: #4B5063;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREVIEW LEGEND BAR
+══════════════════════════════════════════════════════════════════ */
+.legend-bar {
+    -fx-background-color: #1A1D27;
+    -fx-border-color: #2E3244 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 6 12 6 12;
+}
+.legend-dot {
+    -fx-min-width: 8px;
+    -fx-min-height: 8px;
+    -fx-max-width: 8px;
+    -fx-max-height: 8px;
+    -fx-background-radius: 4;
+}
+.legend-label {
+    -fx-text-fill: #7B82A0;
+    -fx-font-size: 10px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PREVIEW BOTTOM BAR
+══════════════════════════════════════════════════════════════════ */
+.preview-bottom-bar {
+    -fx-background-color: #21242F;
+    -fx-border-color: #2E3244 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 6 12 6 12;
+    -fx-alignment: CENTER_RIGHT;
 }

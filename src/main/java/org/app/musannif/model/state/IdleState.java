@@ -13,6 +13,7 @@ public class IdleState implements AppState {
     public void onEnter(MainController ctx) {
         ctx.setBtnScanDisabled(true);
         ctx.setBtnApplyDisabled(true);
+        ctx.setBtnTogglePreviewDisabled(true);
         ctx.setStatus("Select a folder to begin.");
     }
 }

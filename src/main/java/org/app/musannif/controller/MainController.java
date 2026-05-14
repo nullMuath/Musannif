@@ -4,7 +4,10 @@ import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -33,6 +36,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
 
 /**
  * Main controller for the Musannif JavaFX application.
@@ -43,6 +47,35 @@ import java.util.Map;
  *   Memento — after organizing, handleUndoAll() calls OrganizationMemento.restore().
  */
 public class MainController {
+
+    private static final Map<String, String> EXT_COLOR = Map.ofEntries(
+        Map.entry("pdf",  "ext-red"),   Map.entry("exe",  "ext-red"),
+        Map.entry("xlsx", "ext-green"), Map.entry("csv",  "ext-green"), Map.entry("json", "ext-green"),
+        Map.entry("docx", "ext-blue"),  Map.entry("doc",  "ext-blue"),  Map.entry("png",  "ext-blue"),
+        Map.entry("txt",  "ext-gray"),
+        Map.entry("pptx", "ext-orange"),Map.entry("ppt",  "ext-orange"),Map.entry("jpg",  "ext-orange"), Map.entry("jpeg","ext-orange"),
+        Map.entry("jar",  "ext-yellow"),Map.entry("zip",  "ext-yellow"),Map.entry("rar",  "ext-yellow"),
+        Map.entry("mp4",  "ext-purple"),Map.entry("mkv",  "ext-purple"),Map.entry("mov",  "ext-purple"),
+        Map.entry("svg",  "ext-teal"),  Map.entry("gif",  "ext-teal")
+    );
+
+    private static final Map<String, String> CAT_ICON = Map.of(
+        "Documents",  "📄",
+        "Images",     "🖼",
+        "Videos",     "🎬",
+        "Audio",      "🎵",
+        "Archives",   "📦",
+        "Executables","⚙"
+    );
+
+    private static final Map<String, String> CAT_DOT_COLOR = Map.of(
+        "Documents",  "#60A5FA",
+        "Images",     "#4ADE80",
+        "Videos",     "#A78BFA",
+        "Audio",      "#FB923C",
+        "Archives",   "#FBBF24",
+        "Executables","#F87171"
+    );
 
     // -------------------------------------------------------------------------
     //  State pattern
@@ -57,6 +90,7 @@ public class MainController {
 
     public void setBtnScanDisabled(boolean disabled)  { btnScan.setDisable(disabled); }
     public void setBtnApplyDisabled(boolean disabled) { btnApply.setDisable(disabled); }
+    public void setBtnTogglePreviewDisabled(boolean disabled) { btnTogglePreview.setDisable(disabled); }
     public void setStatus(String text)                { lblStatus.setText(text); }
 
     // -------------------------------------------------------------------------
@@ -104,7 +138,9 @@ public class MainController {
     @FXML private RadioButton rbDate;
     @FXML private RadioButton rbExt;
     @FXML private Label       lblEmptyState;
+    @FXML private HBox        tablePreviewContainer;
     @FXML private VBox        previewPanel;
+    @FXML private Separator   previewSeparator;
     @FXML private Button      btnClosePreview;
     @FXML private Button      btnTogglePreview;
     @FXML private Label       lblPreviewMethod;
@@ -112,6 +148,7 @@ public class MainController {
     @FXML private TreeView<String> treePreview;
     @FXML private Label       lblPreviewSummary;
     @FXML private Label       lblTotalSize;
+    @FXML private FlowPane    legendBar;
     @FXML private ProgressBar scanProgress;
     @FXML private HBox        statusBar;
 
@@ -144,6 +181,17 @@ public class MainController {
                 new SimpleStringProperty(helperMethods.formatDateTime(cd.getValue().lastModified())));
 
         setupTitleBarDrag();
+        setupPreviewResize();
+
+        // Auto-refresh preview when organize mode changes (only if panel already open)
+        javafx.beans.value.ChangeListener<Boolean> modeListener = (obs, o, selected) -> {
+            if (selected && previewPanel != null && previewPanel.isVisible() && !scannedFiles.isEmpty())
+                handlePreview(null);
+        };
+        rbType.selectedProperty().addListener(modeListener);
+        rbDate.selectedProperty().addListener(modeListener);
+        rbExt.selectedProperty().addListener(modeListener);
+
         Logger.getLogger().info("Application Started");
         transitionTo(new IdleState());
     }
@@ -192,6 +240,7 @@ public class MainController {
         scanTask.setOnSucceeded(e -> {
             scannedFiles.addAll(scanTask.getValue());
             Logger.getLogger().info("Scan complete: " + scannedFiles.size() + " files found");
+            if (btnTogglePreview != null) btnTogglePreview.setVisible(true);
             transitionTo(new CategorizedState(scannedFiles.size()));
         });
         scanTask.setOnFailed(e -> {
@@ -364,18 +413,25 @@ public class MainController {
 
         Map<String, List<ScannedFile>> categorized = categorizer.categorize(scannedFiles);
 
-        // Build TreeView
-        TreeItem<String> root = new TreeItem<>(selectedFolder.getFileName().toString());
+        // Build TreeView with structured labels: FOLDER:name:count  FILE:name:size
+        TreeItem<String> root = new TreeItem<>("ROOT");
         root.setExpanded(true);
         int totalFiles = 0;
         int otherFiles = 0;
+        long totalBytes = 0;
 
         for (Map.Entry<String, List<ScannedFile>> entry : categorized.entrySet()) {
             List<ScannedFile> files = entry.getValue();
             if (files.isEmpty()) continue;
-            TreeItem<String> folderNode = new TreeItem<>(entry.getKey() + "  (" + files.size() + ")");
+            long folderBytes = files.stream().mapToLong(ScannedFile::sizeBytes).sum();
+            TreeItem<String> folderNode = new TreeItem<>(
+                    "FOLDER:" + entry.getKey() + ":" + files.size() + ":" + helperMethods.formatFileSize(folderBytes));
+            folderNode.setExpanded(true);
             for (ScannedFile f : files) {
-                folderNode.getChildren().add(new TreeItem<>(f.path().getFileName().toString()));
+                folderNode.getChildren().add(new TreeItem<>(
+                        "FILE:" + f.path().getFileName().toString() + ":" + helperMethods.formatFileSize(f.sizeBytes())
+                ));
+                totalBytes += f.sizeBytes();
             }
             root.getChildren().add(folderNode);
             totalFiles += files.size();
@@ -384,13 +440,107 @@ public class MainController {
             }
         }
 
+        final long finalTotalBytes = totalBytes;
+        final int  finalTotal      = totalFiles;
+        final int  finalOther      = otherFiles;
+
         // Wire into the existing FXML preview panel controls
         if (treePreview != null) {
             treePreview.setRoot(root);
-            if (lblPreviewMethod != null) lblPreviewMethod.setText("Mode: " + modeLabel);
+            treePreview.setShowRoot(false);
+            treePreview.setCellFactory(tv -> new TreeCell<>() {
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) { setGraphic(null); setText(null); return; }
+
+                    if (item.startsWith("FOLDER:")) {
+                        String[] p = item.split(":", 4);
+                        String catName = p[1];
+
+                        Label arrowLabel = new Label(getTreeItem().isExpanded() ? "▾" : "▸");
+                        arrowLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:11px;");
+                        getTreeItem().expandedProperty().addListener((obs, o, exp) ->
+                                arrowLabel.setText(exp ? "▾" : "▸"));
+
+                        Label iconLabel = new Label(CAT_ICON.getOrDefault(catName, "📁") + " ");
+                        iconLabel.setStyle("-fx-font-size:12px;");
+
+                        Label nameLabel = new Label(catName);
+                        nameLabel.setStyle("-fx-text-fill:#E8EAF0;-fx-font-weight:bold;-fx-font-size:11.5px;");
+
+                        Region spacer = new Region();
+                        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                        Label countLabel = new Label(p[2] + " files");
+                        countLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:10px;");
+                        Label sizeLabel = new Label("  " + p[3]);
+                        sizeLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:10px;");
+
+                        HBox row = new HBox(4, arrowLabel, iconLabel, nameLabel, spacer, countLabel, sizeLabel);
+                        row.setAlignment(Pos.CENTER_LEFT);
+                        setGraphic(row);
+
+                    } else if (item.startsWith("FILE:")) {
+                        String[] p = item.split(":", 3);
+                        String filename = p[1];
+                        String ext = filename.contains(".")
+                                ? filename.substring(filename.lastIndexOf('.') + 1).toLowerCase() : "";
+                        String colorClass = EXT_COLOR.getOrDefault(ext, "ext-gray");
+
+                        Label badge = new Label(ext.isEmpty() ? "···" : ext.toUpperCase());
+                        badge.getStyleClass().addAll("ext-badge", colorClass);
+
+                        Label nameLabel = new Label(filename);
+                        nameLabel.setStyle("-fx-text-fill:#9DA3BA;-fx-font-size:10.5px;");
+
+                        Region spacer = new Region();
+                        HBox.setHgrow(spacer, Priority.ALWAYS);
+
+                        Label sizeLabel = new Label(p[2]);
+                        sizeLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:10px;");
+
+                        HBox row = new HBox(6, badge, nameLabel, spacer, sizeLabel);
+                        row.setAlignment(Pos.CENTER_LEFT);
+                        setGraphic(row);
+                    }
+                    setText(null);
+                }
+            });
+
+            int folderCount = root.getChildren().size();
+
+            if (lblPreviewMethod != null) lblPreviewMethod.setText("by " + modeLabel);
             if (lblPreviewSummary != null)
-                lblPreviewSummary.setText(totalFiles + " files total, " + otherFiles + " uncategorized");
-            if (previewPanel != null) previewPanel.setVisible(true);
+                lblPreviewSummary.setText(finalTotal + " files · " + folderCount + " folders");
+            if (lblTotalSize != null)
+                lblTotalSize.setText(helperMethods.formatFileSize(finalTotalBytes));
+            if (lblDestPath != null && selectedFolder != null)
+                lblDestPath.setText(selectedFolder.toString());
+
+            if (legendBar != null) {
+                legendBar.getChildren().clear();
+                for (Map.Entry<String, List<ScannedFile>> e : categorized.entrySet()) {
+                    if (e.getValue().isEmpty()) continue;
+                    String dotColor = CAT_DOT_COLOR.getOrDefault(e.getKey(), "#7B82A0");
+                    Region dot = new Region();
+                    dot.getStyleClass().add("legend-dot");
+                    dot.setStyle("-fx-background-color:" + dotColor + ";");
+                    Label lbl = new Label(e.getKey());
+                    lbl.getStyleClass().add("legend-label");
+                    HBox entry = new HBox(4, dot, lbl);
+                    entry.setAlignment(Pos.CENTER_LEFT);
+                    legendBar.getChildren().add(entry);
+                }
+            }
+            if (previewPanel != null) {
+                previewPanel.setManaged(true);
+                previewPanel.setVisible(true);
+            }
+            if (previewSeparator != null) {
+                previewSeparator.setManaged(true);
+                previewSeparator.setVisible(true);
+            }
         } else {
             // Fallback: show in an alert dialog
             TreeView<String> tree = new TreeView<>(root);
@@ -404,6 +554,18 @@ public class MainController {
             alert.getDialogPane().setContent(content);
             alert.getDialogPane().setPrefWidth(500);
             alert.showAndWait();
+        }
+    }
+
+    @FXML
+    private void handleClosePreview(ActionEvent event) {
+        if (previewPanel != null) {
+            previewPanel.setManaged(false);
+            previewPanel.setVisible(false);
+        }
+        if (previewSeparator != null) {
+            previewSeparator.setManaged(false);
+            previewSeparator.setVisible(false);
         }
     }
 
@@ -535,6 +697,20 @@ public class MainController {
             Stage stage = (Stage) titleBar.getScene().getWindow();
             stage.setX(e.getScreenX() - xOffset);
             stage.setY(e.getScreenY() - yOffset);
+        });
+    }
+
+    private void setupPreviewResize() {
+        if (previewSeparator == null) return;
+        previewSeparator.setStyle("-fx-cursor: col-resize;");
+        previewSeparator.setOnMousePressed(e -> xOffset = e.getScreenX());
+        previewSeparator.setOnMouseDragged(e -> {
+            double delta = e.getScreenX() - xOffset;
+            double newWidth = previewPanel.getPrefWidth() - delta;
+            if (newWidth >= previewPanel.getMinWidth() && newWidth <= previewPanel.getMaxWidth()) {
+                previewPanel.setPrefWidth(newWidth);
+                xOffset = e.getScreenX();
+            }
         });
     }
 

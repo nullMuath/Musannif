@@ -16,9 +16,10 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane maxHeight="680" maxWidth="960" minHeight="680" minWidth="960" prefHeight="680" prefWidth="960" styleClass="root-pane" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
+<BorderPane maxHeight="800" maxWidth="1400" minHeight="800" minWidth="1400" prefHeight="800" prefWidth="1400" styleClass="root-pane" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.app.musannif.controller.MainController">
 
     <!-- ToggleGroup defined here so it is accessible across the whole scene -->
     <fx:define>
@@ -137,7 +138,7 @@
             </VBox>
 
             <!-- ── File table + Preview panel ───────────────── -->
-            <HBox VBox.vgrow="ALWAYS">
+            <HBox fx:id="tablePreviewContainer" VBox.vgrow="ALWAYS">
                 <VBox.margin><Insets bottom="0" left="14" right="14" top="10" /></VBox.margin>
 
                 <!-- File table -->
@@ -156,8 +157,11 @@
                     </columns>
                 </TableView>
 
+                <!-- Resize separator for preview panel -->
+                <Separator fx:id="previewSeparator" managed="false" orientation="VERTICAL" styleClass="resize-separator" visible="false" HBox.hgrow="never" />
+
                 <!-- Preview panel — shown after scan -->
-                <VBox fx:id="previewPanel" managed="false" maxWidth="360" minWidth="220" prefWidth="260" styleClass="preview-panel" visible="false">
+                <VBox fx:id="previewPanel" managed="false" maxWidth="400" minWidth="200" prefWidth="300" styleClass="preview-panel" visible="false" HBox.hgrow="never" VBox.vgrow="ALWAYS">
 
                     <!-- Panel header -->
                     <HBox alignment="CENTER_LEFT" prefHeight="36" spacing="8" styleClass="preview-header">
@@ -166,14 +170,15 @@
                             <Label styleClass="preview-title" text="Proposed Structure" />
                             <Label fx:id="lblPreviewMethod" styleClass="preview-subtitle" text="by File Type" />
                         </VBox>
-                        <Button fx:id="btnClosePreview" styleClass="btn-icon" text="✕" />
+                        <Button fx:id="btnClosePreview" onAction="#handleClosePreview" styleClass="btn-icon" text="✕" />
                     </HBox>
 
                     <!-- Destination path strip -->
-                    <HBox alignment="CENTER_LEFT" prefHeight="28" styleClass="preview-path-bar">
-                        <padding><Insets left="12" right="12" /></padding>
+                    <VBox styleClass="preview-path-bar" prefHeight="44">
+                        <padding><Insets left="12" right="12" top="6" bottom="6" /></padding>
+                        <Label text="DESTINATION" styleClass="dest-section-label" />
                         <Label fx:id="lblDestPath" styleClass="dest-path-label" text="/Downloads/{Documents, Images…}" />
-                    </HBox>
+                    </VBox>
 
                     <!-- Tree view -->
                     <TreeView fx:id="treePreview" showRoot="false" styleClass="preview-tree" VBox.vgrow="ALWAYS" />
@@ -181,8 +186,17 @@
                     <!-- Summary footer -->
                     <HBox alignment="CENTER_LEFT" prefHeight="30" styleClass="preview-footer">
                         <padding><Insets left="12" right="12" /></padding>
-                        <Label fx:id="lblPreviewSummary" styleClass="preview-footer-label" text="15 files · 0 uncategorized" HBox.hgrow="ALWAYS" />
+                        <Label fx:id="lblPreviewSummary" styleClass="preview-footer-label" text="15 files · 0 folders" HBox.hgrow="ALWAYS" />
                         <Label fx:id="lblTotalSize" styleClass="preview-footer-label" text="1.8 GB total" />
+                    </HBox>
+
+                    <!-- Category legend -->
+                    <FlowPane fx:id="legendBar" styleClass="legend-bar" hgap="10" vgap="4" VBox.vgrow="NEVER" />
+
+                    <!-- Bottom bar with hide button -->
+                    <HBox styleClass="preview-bottom-bar">
+                        <Region HBox.hgrow="ALWAYS" />
+                        <Button onAction="#handleClosePreview" styleClass="btn-accent" text="Hide preview" />
                     </HBox>
 
                 </VBox>
@@ -194,7 +208,7 @@
 
                 <Label fx:id="lblStatus" styleClass="status-label" text="Select a folder to get started" HBox.hgrow="ALWAYS" />
 
-                <Button fx:id="btnTogglePreview" managed="false" styleClass="btn-toggle-preview" text="Show preview" visible="false" />
+                <Button fx:id="btnTogglePreview" onAction="#handlePreview" styleClass="btn-toggle-preview" text="Show preview" visible="false" />
 
                 <ProgressBar fx:id="scanProgress" managed="false" prefHeight="3" prefWidth="110" progress="0" styleClass="scan-progress" visible="false" />
 
