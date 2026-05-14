@@ -22,11 +22,15 @@ import javafx.event.ActionEvent;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
+import org.app.musannif.model.history.OperationHistory;
+import org.app.musannif.model.history.OperationRecord;
+
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -211,6 +215,7 @@ public class MainController {
         final boolean useDate = rbDate != null && rbDate.isSelected();
         final boolean useExt  = rbExt  != null && rbExt.isSelected();
         final boolean useIcon = rbIcon != null && rbIcon.isSelected();
+        final String  organizeMode = useDate ? "By Date" : useExt ? "By Extension" : "By File Type";
 
         Task<FileOrganizer.OrganizationResult> organizeTask = new Task<>() {
             @Override
@@ -257,6 +262,12 @@ public class MainController {
             scannedFiles.clear();
             Logger.getLogger().info("Organization complete: "
                     + result.movedFiles() + " moved, " + result.skippedFiles() + " skipped");
+
+            // record this operation in session history
+            OperationHistory.getInstance().add(
+                    Instant.now(), selectedFolder, organizeMode,
+                    result.movedFiles(), result.skippedFiles());
+
             transitionTo(new DoneState(result.movedFiles(), result.skippedFiles()));
         });
         organizeTask.setOnFailed(e -> {
@@ -397,7 +408,65 @@ public class MainController {
     }
 
     @FXML private void handleOrganize(ActionEvent event) { System.out.println("Organize clicked"); }
-    @FXML private void handleHistory(ActionEvent event)  { System.out.println("History clicked"); }
+    /** show a dialog listing all past organize operations. */
+    @FXML
+    private void handleHistory(ActionEvent event) {
+        List<OperationRecord> history = OperationHistory.getInstance().getAll();
+
+        if (history.isEmpty()) {
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Operations History");
+            alert.setHeaderText("No operations yet");
+            alert.setContentText("Run an organize operation first.");
+            alert.showAndWait();
+            return;
+        }
+
+        // Build a TableView with one row per operation
+        TableView<OperationRecord> table = new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setPrefHeight(300);
+
+        TableColumn<OperationRecord, String> colTime = new TableColumn<>("Date / Time");
+        colTime.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().formattedTimestamp()));
+
+        TableColumn<OperationRecord, String> colFolder = new TableColumn<>("Folder");
+        colFolder.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().sourceFolder().getFileName().toString()));
+
+        TableColumn<OperationRecord, String> colMode = new TableColumn<>("Mode");
+        colMode.setCellValueFactory(cd ->
+                new SimpleStringProperty(cd.getValue().mode()));
+
+        TableColumn<OperationRecord, String> colMoved = new TableColumn<>("Moved");
+        colMoved.setCellValueFactory(cd ->
+                new SimpleStringProperty(String.valueOf(cd.getValue().filesMoved())));
+
+        TableColumn<OperationRecord, String> colSkipped = new TableColumn<>("Skipped");
+        colSkipped.setCellValueFactory(cd ->
+                new SimpleStringProperty(String.valueOf(cd.getValue().filesSkipped())));
+
+        //noinspection unchecked
+        table.getColumns().addAll(colTime, colFolder, colMode, colMoved, colSkipped);
+        table.getItems().addAll(history);
+
+        // Most recent at the top
+        table.getItems().sort((a, b) -> b.timestamp().compareTo(a.timestamp()));
+
+        Label header = new Label("Past organize operations  (" + history.size() + " total)");
+
+        VBox content = new VBox(8, header, table);
+        content.setPrefWidth(620);
+
+        Alert alert = new Alert(Alert.AlertType.NONE);
+        alert.setTitle("Operations History");
+        alert.setHeaderText(null);
+        alert.getDialogPane().setContent(content);
+        alert.getDialogPane().setPrefWidth(640);
+        alert.getButtonTypes().add(ButtonType.CLOSE);
+        alert.showAndWait();
+    }
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
 
     @FXML
