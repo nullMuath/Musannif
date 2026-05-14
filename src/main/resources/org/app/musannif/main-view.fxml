@@ -161,7 +161,7 @@
                 <Separator fx:id="previewSeparator" managed="false" orientation="VERTICAL" styleClass="resize-separator" visible="false" HBox.hgrow="never" />
 
                 <!-- Preview panel — shown after scan -->
-                <VBox fx:id="previewPanel" managed="false" maxWidth="400" minWidth="200" prefWidth="300" styleClass="preview-panel" visible="false" HBox.hgrow="never" VBox.vgrow="ALWAYS">
+                <VBox fx:id="previewPanel" managed="false" maxWidth="520" minWidth="200" prefWidth="380" styleClass="preview-panel" visible="false" HBox.hgrow="never" VBox.vgrow="ALWAYS">
 
                     <!-- Panel header -->
                     <HBox alignment="CENTER_LEFT" prefHeight="36" spacing="8" styleClass="preview-header">
@@ -170,7 +170,6 @@
                             <Label styleClass="preview-title" text="Proposed Structure" />
                             <Label fx:id="lblPreviewMethod" styleClass="preview-subtitle" text="by File Type" />
                         </VBox>
-                        <Button fx:id="btnClosePreview" onAction="#handleClosePreview" styleClass="btn-icon" text="✕" />
                     </HBox>
 
                     <!-- Destination path strip -->
@@ -192,12 +191,6 @@
 
                     <!-- Category legend -->
                     <FlowPane fx:id="legendBar" styleClass="legend-bar" hgap="10" vgap="4" VBox.vgrow="NEVER" />
-
-                    <!-- Bottom bar with hide button -->
-                    <HBox styleClass="preview-bottom-bar">
-                        <Region HBox.hgrow="ALWAYS" />
-                        <Button onAction="#handleClosePreview" styleClass="btn-accent" text="Hide preview" />
-                    </HBox>
 
                 </VBox>
             </HBox>

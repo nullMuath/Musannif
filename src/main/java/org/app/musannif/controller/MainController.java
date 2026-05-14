@@ -60,12 +60,12 @@ public class MainController {
     );
 
     private static final Map<String, String> CAT_ICON = Map.of(
-        "Documents",  "📄",
-        "Images",     "🖼",
-        "Videos",     "🎬",
-        "Audio",      "🎵",
-        "Archives",   "📦",
-        "Executables","⚙"
+        "Documents",  "\u25C7",
+        "Images",     "\u25CB",
+        "Videos",     "\u25B6",
+        "Audio",      "\u266A",
+        "Archives",   "\u25A4",
+        "Executables","\u2699"
     );
 
     private static final Map<String, String> CAT_DOT_COLOR = Map.of(
@@ -141,7 +141,6 @@ public class MainController {
     @FXML private HBox        tablePreviewContainer;
     @FXML private VBox        previewPanel;
     @FXML private Separator   previewSeparator;
-    @FXML private Button      btnClosePreview;
     @FXML private Button      btnTogglePreview;
     @FXML private Label       lblPreviewMethod;
     @FXML private Label       lblDestPath;
@@ -186,7 +185,7 @@ public class MainController {
         // Auto-refresh preview when organize mode changes (only if panel already open)
         javafx.beans.value.ChangeListener<Boolean> modeListener = (obs, o, selected) -> {
             if (selected && previewPanel != null && previewPanel.isVisible() && !scannedFiles.isEmpty())
-                handlePreview(null);
+                rebuildPreview();
         };
         rbType.selectedProperty().addListener(modeListener);
         rbDate.selectedProperty().addListener(modeListener);
@@ -377,11 +376,27 @@ public class MainController {
     // Show preview tree of what will happen before organizing
     @FXML
     private void handlePreview(ActionEvent event) {
-        if (scannedFiles.isEmpty()) {
-            setStatus("Scan a folder first to preview.");
+        if (previewPanel != null && previewPanel.isVisible()) {
+            previewPanel.setManaged(false);
+            previewPanel.setVisible(false);
+            if (previewSeparator != null) {
+                previewSeparator.setManaged(false);
+                previewSeparator.setVisible(false);
+            }
+            btnTogglePreview.setText("Show preview");
             return;
         }
 
+        if (scannedFiles.isEmpty()) {
+            setStatus("Scan a folder first to preview.");
+            btnTogglePreview.setText("Show preview");
+            return;
+        }
+
+        rebuildPreview();
+    }
+
+    private void rebuildPreview() {
         final boolean useDate = rbDate != null && rbDate.isSelected();
         final boolean useExt  = rbExt  != null && rbExt.isSelected();
 
@@ -463,21 +478,26 @@ public class MainController {
                         getTreeItem().expandedProperty().addListener((obs, o, exp) ->
                                 arrowLabel.setText(exp ? "▾" : "▸"));
 
-                        Label iconLabel = new Label(CAT_ICON.getOrDefault(catName, "📁") + " ");
-                        iconLabel.setStyle("-fx-font-size:12px;");
+                        String catColor = CAT_DOT_COLOR.getOrDefault(catName, "#7B82A0");
+
+                        Label iconLabel = new Label(CAT_ICON.getOrDefault(catName, "\u25A1") + " ");
+                        iconLabel.setStyle("-fx-text-fill:" + catColor + ";-fx-font-size:13px;");
 
                         Label nameLabel = new Label(catName);
                         nameLabel.setStyle("-fx-text-fill:#E8EAF0;-fx-font-weight:bold;-fx-font-size:11.5px;");
+
+                        Region leftAccent = new Region();
+                        leftAccent.setStyle("-fx-min-width:3px;-fx-min-height:18px;-fx-max-width:3px;-fx-max-height:18px;-fx-background-color:" + catColor + ";-fx-background-radius:2;");
 
                         Region spacer = new Region();
                         HBox.setHgrow(spacer, Priority.ALWAYS);
 
                         Label countLabel = new Label(p[2] + " files");
-                        countLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:10px;");
+                        countLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:10px;");
                         Label sizeLabel = new Label("  " + p[3]);
-                        sizeLabel.setStyle("-fx-text-fill:#4B5063;-fx-font-size:10px;");
+                        sizeLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:10px;");
 
-                        HBox row = new HBox(4, arrowLabel, iconLabel, nameLabel, spacer, countLabel, sizeLabel);
+                        HBox row = new HBox(6, leftAccent, arrowLabel, iconLabel, nameLabel, spacer, countLabel, sizeLabel);
                         row.setAlignment(Pos.CENTER_LEFT);
                         setGraphic(row);
 
@@ -541,6 +561,7 @@ public class MainController {
                 previewSeparator.setManaged(true);
                 previewSeparator.setVisible(true);
             }
+            btnTogglePreview.setText("Hide preview");
         } else {
             // Fallback: show in an alert dialog
             TreeView<String> tree = new TreeView<>(root);
@@ -554,18 +575,6 @@ public class MainController {
             alert.getDialogPane().setContent(content);
             alert.getDialogPane().setPrefWidth(500);
             alert.showAndWait();
-        }
-    }
-
-    @FXML
-    private void handleClosePreview(ActionEvent event) {
-        if (previewPanel != null) {
-            previewPanel.setManaged(false);
-            previewPanel.setVisible(false);
-        }
-        if (previewSeparator != null) {
-            previewSeparator.setManaged(false);
-            previewSeparator.setVisible(false);
         }
     }
 
