@@ -12,15 +12,9 @@ public class ScanningState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(true);
+        ctx.setBtnPreviewDisabled(true);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnTogglePreviewDisabled(true);
+        ctx.setBtnRefreshDisabled(true);
         ctx.setStatus("Scanning…");
-    }
-
-    @Override
-    public void onScan(MainController ctx) {
-        // Already scanning — ignore; buttons are disabled so this path is only
-        // reachable via programmatic calls.
     }
 }

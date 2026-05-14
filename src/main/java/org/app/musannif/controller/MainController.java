@@ -22,12 +22,18 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.animation.FadeTransition;
+import javafx.animation.ParallelTransition;
 import javafx.animation.ScaleTransition;
+import javafx.animation.Interpolator;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
+import javafx.scene.Scene;
 
 import org.app.musannif.model.history.OperationHistory;
 import org.app.musannif.model.history.OperationRecord;
@@ -93,22 +99,33 @@ public class MainController {
         newState.onEnter(this);
     }
 
-    public void setBtnScanDisabled(boolean disabled)  { btnScan.setDisable(disabled); }
+    public void setBtnPreviewDisabled(boolean disabled)  { btnPreview.setDisable(disabled); }
     public void setBtnApplyDisabled(boolean disabled) { btnApply.setDisable(disabled); }
-    public void setBtnTogglePreviewDisabled(boolean disabled) { btnTogglePreview.setDisable(disabled); }
+    public void setBtnRefreshDisabled(boolean disabled) { btnRefresh.setDisable(disabled); }
     public void setStatus(String text)                { lblStatus.setText(text); }
+
+    public void showTable() {
+        doneOverlay.setManaged(false);
+        doneOverlay.setVisible(false);
+        tablePreviewContainer.setManaged(true);
+        tablePreviewContainer.setVisible(true);
+    }
 
     public void markSuccess() {
         doneOverlay.setManaged(true);
         doneOverlay.setVisible(true);
         tablePreviewContainer.setManaged(false);
         tablePreviewContainer.setVisible(false);
+        doneOverlay.setOpacity(0);
+        FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(350), doneOverlay);
+        ft.setFromValue(0); ft.setToValue(1);
+        ft.setInterpolator(Interpolator.EASE_OUT);
         ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(500), doneOverlay);
-        st.setFromX(0.8); st.setFromY(0.8);
+        st.setFromX(0.85); st.setFromY(0.85);
         st.setToX(1.0); st.setToY(1.0);
-        st.setAutoReverse(true);
-        st.setCycleCount(2);
-        st.play();
+        st.setInterpolator(Interpolator.EASE_OUT);
+        ParallelTransition pt = new ParallelTransition(ft, st);
+        pt.play();
     }
 
     // -------------------------------------------------------------------------
@@ -136,7 +153,8 @@ public class MainController {
 
     @FXML private TextField  txtFolderPath;
     @FXML private Button     btnBrowse;
-    @FXML private Button     btnScan;
+    @FXML private Button     btnRefresh;
+    @FXML private Button     btnPreview;
     @FXML private Button     btnApply;
     @FXML private Label      lblStatus;
     @FXML private Button     btnGenerateTestFiles;
@@ -158,7 +176,6 @@ public class MainController {
     @FXML private HBox        tablePreviewContainer;
     @FXML private VBox        previewPanel;
     @FXML private Separator   previewSeparator;
-    @FXML private Button      btnTogglePreview;
     @FXML private Button      btnOpenFolder;
     @FXML private VBox        doneOverlay;
     @FXML private Label       lblDoneIcon;
@@ -324,17 +341,14 @@ public class MainController {
             tablePreviewContainer.setVisible(true);
             Logger.getLogger().info("Folder Selected: " + selectedFolder);
             currentState.onBrowse(this);
+            doScan();
         }
     }
 
-    @FXML
-    private void handleScan(ActionEvent event) {
-        if (selectedFolder == null) {
-            setStatus("Please select a folder first.");
-            return;
-        }
+    private void doScan() {
+        if (selectedFolder == null) return;
+        showTable();
         scannedFiles.clear();
-        currentState.onScan(this);
         Logger.getLogger().info("Scanning folder: " + selectedFolder);
 
         Task<List<ScannedFile>> scanTask = new Task<>() {
@@ -349,7 +363,7 @@ public class MainController {
         scanTask.setOnSucceeded(e -> {
             scannedFiles.addAll(scanTask.getValue());
             Logger.getLogger().info("Scan complete: " + scannedFiles.size() + " files found");
-            if (btnTogglePreview != null) btnTogglePreview.setVisible(true);
+            btnPreview.setDisable(false);
             transitionTo(new CategorizedState(scannedFiles.size()));
         });
         scanTask.setOnFailed(e -> {
@@ -361,11 +375,77 @@ public class MainController {
     }
 
     @FXML
+    private void handleRefresh(ActionEvent event) {
+        doScan();
+    }
+
+    @FXML
     private void handleApply(ActionEvent event) throws IOException {
         if (selectedFolder == null || scannedFiles.isEmpty()) {
             setStatus("Nothing to organize — scan a folder first.");
             return;
         }
+
+        Stage confirmStage = new Stage();
+        confirmStage.initStyle(StageStyle.TRANSPARENT);
+        confirmStage.initModality(Modality.APPLICATION_MODAL);
+        HBox titleBar = createDialogTitleBar("Confirm Organization", confirmStage);
+
+        Label warningIcon = new Label("\u26A0");
+        warningIcon.setStyle("-fx-text-fill:#FBBF24;-fx-font-size:40px;");
+        Label caution = new Label("Caution");
+        caution.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:16px;-fx-font-weight:bold;");
+        Label body = new Label("This will move files into categorized folders.\nYou can undo this operation later from the History tab.");
+        body.setStyle("-fx-text-fill:#9DA3BA;-fx-font-size:12.5px;-fx-line-spacing:4;");
+        body.setWrapText(false);
+        VBox textBlock = new VBox(6, caution, body);
+
+        Button applyBtn = new Button("Apply Changes");
+        applyBtn.setStyle("-fx-background-color:#22c55e;-fx-background-radius:6;-fx-text-fill:black;-fx-font-size:12px;-fx-font-weight:600;-fx-padding:8 24 8 24;-fx-cursor:hand;");
+        Button cancelBtn = new Button("Cancel");
+        cancelBtn.setStyle("-fx-background-color:transparent;-fx-border-color:#2E3244;-fx-border-width:1;-fx-border-radius:6;-fx-background-radius:6;-fx-text-fill:#7B82A0;-fx-font-size:12px;-fx-padding:8 20 8 20;-fx-cursor:hand;");
+        cancelBtn.setOnMouseEntered(e -> cancelBtn.setStyle("-fx-background-color:#262A3A;-fx-border-color:#4ADE80;-fx-border-width:1;-fx-border-radius:6;-fx-background-radius:6;-fx-text-fill:#E8EAF0;-fx-font-size:12px;-fx-padding:8 20 8 20;-fx-cursor:hand;"));
+        cancelBtn.setOnMouseExited(e -> cancelBtn.setStyle("-fx-background-color:transparent;-fx-border-color:#2E3244;-fx-border-width:1;-fx-border-radius:6;-fx-background-radius:6;-fx-text-fill:#7B82A0;-fx-font-size:12px;-fx-padding:8 20 8 20;-fx-cursor:hand;"));
+
+        Region btnSpacer = new Region();
+        HBox.setHgrow(btnSpacer, Priority.ALWAYS);
+        HBox btnRow = new HBox(8, btnSpacer, cancelBtn, applyBtn);
+        btnRow.setStyle("-fx-background-color:#1A1D27;-fx-border-color:#2E3244 transparent transparent transparent;-fx-border-width:1 0 0 0;");
+        btnRow.setPadding(new javafx.geometry.Insets(10, 14, 10, 14));
+
+        HBox contentRow = new HBox(14, warningIcon, textBlock);
+        contentRow.setAlignment(Pos.TOP_LEFT);
+        VBox content = new VBox(contentRow);
+        content.setPadding(new javafx.geometry.Insets(20, 24, 16, 24));
+        content.setStyle("-fx-background-color:#0F1117;");
+
+        VBox root = new VBox(titleBar, content, btnRow);
+        root.setStyle("-fx-background-color:#0F1117;-fx-border-color:#2E3244;-fx-border-width:1;");
+        root.setOpacity(0);
+        root.setScaleX(0.95);
+        root.setScaleY(0.95);
+
+        final boolean[] confirmed = {false};
+        applyBtn.setOnAction(e -> { confirmed[0] = true; confirmStage.close(); });
+        cancelBtn.setOnAction(e -> confirmStage.close());
+
+        Scene confirmScene = new Scene(root, 400, 210);
+        confirmScene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        confirmStage.setScene(confirmScene);
+        confirmStage.setResizable(false);
+        confirmStage.setOnShown(e -> {
+            FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(200), root);
+            ft.setFromValue(0); ft.setToValue(1);
+            ft.setInterpolator(Interpolator.EASE_OUT);
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(200), root);
+            st.setFromX(0.95); st.setFromY(0.95);
+            st.setToX(1.0); st.setToY(1.0);
+            st.setInterpolator(Interpolator.EASE_OUT);
+            new ParallelTransition(ft, st).play();
+        });
+        confirmStage.showAndWait();
+        if (!confirmed[0]) return;
+
         currentState.onOrganize(this);
         Logger.getLogger().info("Organizing files in: " + selectedFolder);
 
@@ -491,7 +571,6 @@ public class MainController {
         }
     }
 
-    // Show preview tree of what will happen before organizing
     @FXML
     private void handlePreview(ActionEvent event) {
         if (previewPanel != null && previewPanel.isVisible()) {
@@ -501,13 +580,11 @@ public class MainController {
                 previewSeparator.setManaged(false);
                 previewSeparator.setVisible(false);
             }
-            btnTogglePreview.setText("Show preview");
             return;
         }
 
         if (scannedFiles.isEmpty()) {
             setStatus("Scan a folder first to preview.");
-            btnTogglePreview.setText("Show preview");
             return;
         }
 
@@ -679,7 +756,6 @@ public class MainController {
                 previewSeparator.setManaged(true);
                 previewSeparator.setVisible(true);
             }
-            btnTogglePreview.setText("Hide preview");
         } else {
             // Fallback: show in an alert dialog
             TreeView<String> tree = new TreeView<>(root);
@@ -771,88 +847,189 @@ public class MainController {
             return;
         }
 
+        long folderCount = mappings.stream()
+                .map(m -> Path.of(m[1]).getParent())
+                .distinct().count();
+        Map<String, Long> extCount = mappings.stream()
+                .map(m -> {
+                    String name = Path.of(m[1]).getFileName().toString();
+                    int dot = name.lastIndexOf('.');
+                    return dot > 0 ? name.substring(dot + 1).toLowerCase() : "(none)";
+                })
+                .collect(java.util.stream.Collectors.groupingBy(
+                        e -> e, java.util.stream.Collectors.counting()));
+        String extSummary = extCount.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .limit(5)
+                .map(e -> e.getKey().toUpperCase() + " \u00D7" + e.getValue())
+                .collect(java.util.stream.Collectors.joining("  \u2022  "));
+
+        boolean restorable = SnapshotManager.isRestorable(record);
+
+        // ── Header ────────────────────────────────────────────────
+        Label title = new Label(record.mode());
+        title.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:15px;-fx-font-weight:bold;");
+        Label badge = new Label(restorable ? "RESTORABLE" : "UNRESTORABLE");
+        badge.setStyle(restorable
+                ? "-fx-background-color:#143D20;-fx-text-fill:#4ADE80;-fx-font-size:10px;-fx-font-weight:bold;-fx-padding:2 8 2 8;-fx-background-radius:3;"
+                : "-fx-background-color:#3D1515;-fx-text-fill:#F87171;-fx-font-size:10px;-fx-font-weight:bold;-fx-padding:2 8 2 8;-fx-background-radius:3;");
+        HBox headerRow = new HBox(10, title, badge);
+        headerRow.setAlignment(Pos.CENTER_LEFT);
+
+        // ── Metadata card ─────────────────────────────────────────
+        Label tsLabel = new Label(record.formattedTimestamp());
+        tsLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11.5px;");
+        Label folderLabel = new Label(record.sourceFolder().toAbsolutePath().normalize().toString());
+        folderLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11.5px;");
+
+        HBox stats = new HBox(20);
+        stats.setAlignment(Pos.CENTER_LEFT);
+        String[] statData = {
+            record.filesMoved() + " moved",  "#60A5FA",
+            record.filesSkipped() + " skipped", "#FBBF24",
+            mappings.size() + " total",   "#E8EAF0",
+            folderCount + " folders",     "#7B82A0"
+        };
+        for (int i = 0; i < statData.length; i += 2) {
+            Label l = new Label(statData[i]);
+            l.setStyle("-fx-text-fill:" + statData[i + 1] + ";-fx-font-size:12px;");
+            stats.getChildren().add(l);
+        }
+
+        Label extLine = new Label(extSummary);
+        extLine.setStyle("-fx-text-fill:#A78BFA;-fx-font-size:11px;");
+
+        VBox meta = new VBox(4, tsLabel, folderLabel, stats, extLine);
+        meta.setStyle("-fx-background-color:#1A1D27;-fx-background-radius:6;-fx-padding:12 14 12 14;");
+        meta.setPrefWidth(700);
+
+        // ── File table ────────────────────────────────────────────
         TableView<String[]> fileTable = new TableView<>();
         fileTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        fileTable.setPrefHeight(350);
+        fileTable.setPrefHeight(280);
         fileTable.getStyleClass().add("file-table");
 
         TableColumn<String[], String> colOrig = new TableColumn<>("ORIGINAL LOCATION");
-        colOrig.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue()[1]));
-
+        colOrig.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[1]));
         TableColumn<String[], String> colNew = new TableColumn<>("NEW LOCATION");
-        colNew.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue()[0]));
-
+        colNew.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[0]));
         fileTable.getColumns().addAll(colOrig, colNew);
         fileTable.getItems().addAll(mappings);
 
-        Label header = new Label("\uD83D\uDCCB  Operation: " + record.mode());
-        header.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:14px;-fx-font-weight:bold;");
+        // ── Assemble ──────────────────────────────────────────────
+        VBox body = new VBox(10, headerRow, meta, fileTable);
+        body.setStyle("-fx-background-color:#0F1117;");
+        body.setPadding(new javafx.geometry.Insets(16, 20, 16, 20));
 
-        Label timestamp = new Label("Date/Time: " + record.formattedTimestamp());
-        timestamp.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:12px;");
-        Label folder = new Label("Folder: " + record.sourceFolder().toAbsolutePath().normalize());
-        folder.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:12px;");
-        Label summary = new Label(record.filesMoved() + " moved \u00B7 " + record.filesSkipped() + " skipped \u00B7 " + mappings.size() + " files total");
-        summary.setStyle("-fx-text-fill:#4ADE80;-fx-font-size:12px;");
+        Stage detailsStage = new Stage();
+        detailsStage.initStyle(StageStyle.TRANSPARENT);
+        detailsStage.initModality(Modality.APPLICATION_MODAL);
+        HBox titleBar = createDialogTitleBar("Operation Details", detailsStage);
 
-        Separator sep = new Separator();
-        sep.setStyle("-fx-background-color:#2E3244;");
+        VBox root = new VBox(titleBar, body);
+        root.setStyle("-fx-background-color:#0F1117;-fx-border-color:#2E3244;-fx-border-width:1;");
+        root.setOpacity(0);
+        root.setScaleX(0.95);
+        root.setScaleY(0.95);
 
-        VBox content = new VBox(8, header, timestamp, folder, summary, sep, fileTable);
-        content.setPrefWidth(720);
-
-        Alert alert = new Alert(Alert.AlertType.NONE);
-        alert.setTitle("Operation Details");
-        alert.setHeaderText(null);
-        alert.getDialogPane().setContent(content);
-        alert.getDialogPane().getStyleClass().add("modal-root");
-        alert.getDialogPane().setPrefWidth(740);
-        alert.getDialogPane().setPrefHeight(520);
-        alert.getButtonTypes().add(ButtonType.CLOSE);
-        alert.showAndWait();
+        Scene scene = new Scene(root, 720, 520);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        detailsStage.setScene(scene);
+        detailsStage.setResizable(false);
+        detailsStage.setOnShown(e -> {
+            FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(200), root);
+            ft.setFromValue(0); ft.setToValue(1);
+            ft.setInterpolator(Interpolator.EASE_OUT);
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(200), root);
+            st.setFromX(0.95); st.setFromY(0.95);
+            st.setToX(1.0); st.setToY(1.0);
+            st.setInterpolator(Interpolator.EASE_OUT);
+            new ParallelTransition(ft, st).play();
+        });
+        detailsStage.showAndWait();
     }
 
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
 
     @FXML
     private void handleInfo(ActionEvent event) {
+        Stage stage = new Stage();
+        stage.initStyle(StageStyle.TRANSPARENT);
+        stage.initModality(Modality.APPLICATION_MODAL);
+        stage.setTitle("About Musannif");
+
+        // ── Custom title bar ──────────────────────────────────────
+        HBox titleBar = createDialogTitleBar("About Musannif", stage);
+
+        // ── Content ───────────────────────────────────────────────
+        ImageView logo = new ImageView(new Image(
+                MainController.class.getResourceAsStream("/org/app/musannif/icons/Document.png")));
+        logo.setFitHeight(72); logo.setFitWidth(72);
+        logo.setPreserveRatio(true);
+
         Hyperlink authorLink1 = new Hyperlink("@nullMuath");
+        authorLink1.setStyle("-fx-text-fill:#4ADE80;-fx-font-size:12px;-fx-border-color:transparent;");
         authorLink1.setOnAction(e -> openURL("https://github.com/nullMuath"));
         Hyperlink authorLink2 = new Hyperlink("@MeCaveman");
+        authorLink2.setStyle("-fx-text-fill:#4ADE80;-fx-font-size:12px;-fx-border-color:transparent;");
         authorLink2.setOnAction(e -> openURL("https://github.com/MeCaveman"));
         Hyperlink repoLink = new Hyperlink("github.com/cpit252-spring-26-IT2/project-musannif");
+        repoLink.setStyle("-fx-text-fill:#4ADE80;-fx-font-size:12px;-fx-border-color:transparent;");
         repoLink.setOnAction(e -> openURL("https://github.com/cpit252-spring-26-IT2/project-musannif"));
 
-        VBox contentBox = new VBox(8);
-        try {
-            ImageView logo = new ImageView(new Image(
-                    MainController.class.getResourceAsStream("/org/app/musannif/icons/app-icon.svg")));
-            logo.setFitHeight(80); logo.setFitWidth(80); logo.setPreserveRatio(true);
-            HBox logoContainer = new HBox(logo);
-            logoContainer.setAlignment(Pos.CENTER);
-            logoContainer.setPrefHeight(100);
-            contentBox.getChildren().add(logoContainer);
-        } catch (Exception ignored) {}
+        Label appTitle = new Label("Musannif - \u0645\u0635\u0646\u0641");
+        appTitle.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:20px;-fx-font-weight:bold;");
 
-        HBox authors = new HBox(2, authorLink1, new Label("&"), authorLink2);
-        authors.setAlignment(Pos.CENTER);
+        Label desc = new Label("Organizes your files into neat folders\nby type, date, or extension.");
+        desc.setStyle("-fx-text-fill:#9DA3BA;-fx-font-size:13px;-fx-alignment:CENTER;-fx-line-spacing:4;");
+        desc.setAlignment(Pos.CENTER);
+        desc.setPrefHeight(48);
+
+        Label version = new Label("Version 0.2");
+        version.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11px;");
+
         Label devLabel = new Label("Developed by");
-        devLabel.setMaxWidth(Double.MAX_VALUE);
+        devLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11px;");
         devLabel.setAlignment(Pos.CENTER);
+        devLabel.setMaxWidth(Double.MAX_VALUE);
 
-        contentBox.getChildren().addAll(
-                new Label("a javafx desktop app that organizes and sorts your files."),
-                new Label("Version 0.2"), devLabel, authors,
-                new Separator(), new Label("Project Repository:"), repoLink);
+        HBox authors = new HBox(4, authorLink1, new Label("&"), authorLink2);
+        authors.setAlignment(Pos.CENTER);
+        ((Label)authors.getChildren().get(1)).setStyle("-fx-text-fill:#4B5063;-fx-font-size:12px;");
 
-        Alert alert = new Alert(Alert.AlertType.NONE);
-        alert.setTitle("About Musannif");
-        alert.setHeaderText("Musannif - مصنف");
-        alert.getDialogPane().setContent(contentBox);
-        alert.getButtonTypes().add(ButtonType.OK);
-        alert.showAndWait();
+        Separator sep = new Separator();
+        sep.setStyle("-fx-background-color:#2E3244;");
+
+        Label repoLabel = new Label("Project Repository:");
+        repoLabel.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11px;-fx-alignment:CENTER;");
+        repoLabel.setMaxWidth(Double.MAX_VALUE);
+        repoLabel.setAlignment(Pos.CENTER);
+
+        VBox content = new VBox(6, logo, appTitle, desc, version, devLabel, authors, sep, repoLabel, repoLink);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new javafx.geometry.Insets(20, 30, 24, 30));
+
+        VBox root = new VBox(titleBar, content);
+        root.setStyle("-fx-background-color:#0F1117;-fx-border-color:#2E3244;-fx-border-width:1;");
+        root.setOpacity(0);
+        root.setScaleX(0.95);
+        root.setScaleY(0.95);
+
+        Scene scene = new Scene(root, 380, 370);
+        scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
+        stage.setScene(scene);
+        stage.setResizable(false);
+        stage.setOnShown(e -> {
+            FadeTransition ft = new FadeTransition(javafx.util.Duration.millis(200), root);
+            ft.setFromValue(0); ft.setToValue(1);
+            ft.setInterpolator(Interpolator.EASE_OUT);
+            ScaleTransition st = new ScaleTransition(javafx.util.Duration.millis(200), root);
+            st.setFromX(0.95); st.setFromY(0.95);
+            st.setToX(1.0); st.setToY(1.0);
+            st.setInterpolator(Interpolator.EASE_OUT);
+            new ParallelTransition(ft, st).play();
+        });
+        stage.showAndWait();
     }
 
     @FXML
@@ -918,6 +1095,27 @@ public class MainController {
                 xOffset = e.getScreenX();
             }
         });
+    }
+
+    private HBox createDialogTitleBar(String titleText, Stage stage) {
+        Label title = new Label(titleText);
+        title.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:13px;-fx-font-weight:600;");
+        Region spacer = new Region();
+        HBox.setHgrow(spacer, Priority.ALWAYS);
+        Button closeBtn = new Button("\u2715");
+        closeBtn.setStyle("-fx-background-color:transparent;-fx-text-fill:#8B92AA;-fx-font-size:14px;-fx-padding:6 10 6 10;-fx-cursor:hand;-fx-border-radius:4;-fx-background-radius:4;");
+        closeBtn.setOnMouseEntered(e -> closeBtn.setStyle("-fx-background-color:#DC3545;-fx-text-fill:#FFFFFF;-fx-font-size:14px;-fx-padding:6 10 6 10;-fx-cursor:hand;-fx-border-radius:4;-fx-background-radius:4;"));
+        closeBtn.setOnMouseExited(e -> closeBtn.setStyle("-fx-background-color:transparent;-fx-text-fill:#8B92AA;-fx-font-size:14px;-fx-padding:6 10 6 10;-fx-cursor:hand;-fx-border-radius:4;-fx-background-radius:4;"));
+        closeBtn.setOnAction(e -> stage.close());
+        HBox bar = new HBox(12, title, spacer, closeBtn);
+        bar.setAlignment(Pos.CENTER_LEFT);
+        bar.setStyle("-fx-background-color:#1A1D27;-fx-border-color:#2E3244;-fx-border-width:0 0 1 0;");
+        bar.setPrefHeight(40);
+        bar.setPadding(new javafx.geometry.Insets(0, 12, 0, 12));
+        final double[] dragXY = new double[2];
+        bar.setOnMousePressed(e -> { dragXY[0] = e.getSceneX(); dragXY[1] = e.getSceneY(); });
+        bar.setOnMouseDragged(e -> { stage.setX(e.getScreenX() - dragXY[0]); stage.setY(e.getScreenY() - dragXY[1]); });
+        return bar;
     }
 
     private void openURL(String url) {

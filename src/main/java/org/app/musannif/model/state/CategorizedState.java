@@ -16,9 +16,10 @@ public class CategorizedState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(false);
+        ctx.showTable();
+        ctx.setBtnPreviewDisabled(false);
         ctx.setBtnApplyDisabled(false);
-        ctx.setBtnTogglePreviewDisabled(false);
+        ctx.setBtnRefreshDisabled(false);
         ctx.setStatus("Scan complete — " + fileCount + " files found.");
     }
 

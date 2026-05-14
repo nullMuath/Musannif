@@ -18,9 +18,9 @@ public class DoneState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(false);
+        ctx.setBtnPreviewDisabled(true);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnTogglePreviewDisabled(true);
+        ctx.setBtnRefreshDisabled(true);
         ctx.setStatus("✓ Done — " + movedFiles + " files moved, " + skippedFiles + " skipped.");
         ctx.markSuccess();
     }

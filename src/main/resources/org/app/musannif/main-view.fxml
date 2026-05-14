@@ -69,22 +69,27 @@
 
             <!-- Section label -->
             <Label styleClass="nav-section-label" text="NAVIGATION">
-                <VBox.margin><Insets bottom="8" left="20" right="20" top="14" /></VBox.margin>
+                <VBox.margin><Insets bottom="6" left="20" right="20" top="14" /></VBox.margin>
             </Label>
 
-            <!-- Organize (active) -->
-            <HBox fx:id="navOrganize" onMouseClicked="#handleNavOrganize" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item,nav-item-active">
-                <padding><Insets left="17" right="20" /></padding>
-                <Label fx:id="navOrganizeIcon" styleClass="nav-icon-active" text="⧉" />
-                <Label fx:id="navOrganizeLabel" styleClass="nav-label-active" text="Organize" />
-            </HBox>
+            <VBox styleClass="nav-group">
+                <VBox.margin><Insets left="14" right="14" /></VBox.margin>
 
-            <!-- History -->
-            <HBox fx:id="navHistory" onMouseClicked="#handleNavHistory" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item">
-                <padding><Insets left="20" right="20" /></padding>
-                <Label fx:id="navHistoryIcon" styleClass="nav-icon" text="⏱" />
-                <Label fx:id="navHistoryLabel" styleClass="nav-label" text="History" />
-            </HBox>
+                <!-- Organize (active) -->
+                <HBox fx:id="navOrganize" onMouseClicked="#handleNavOrganize" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item,nav-item-active">
+                    <padding><Insets left="17" right="20" /></padding>
+                    <Label fx:id="navOrganizeIcon" styleClass="nav-icon-active" text="⧉" />
+                    <Label fx:id="navOrganizeLabel" styleClass="nav-label-active" text="Organize" />
+                </HBox>
+
+                <!-- History -->
+                <HBox fx:id="navHistory" onMouseClicked="#handleNavHistory" alignment="CENTER_LEFT" prefHeight="44" spacing="10" styleClass="nav-item">
+                    <padding><Insets left="20" right="20" /></padding>
+                    <Label fx:id="navHistoryIcon" styleClass="nav-icon" text="⏱" />
+                    <Label fx:id="navHistoryLabel" styleClass="nav-label" text="History" />
+                </HBox>
+
+            </VBox>
 
             <!-- Push rest to bottom -->
             <Region VBox.vgrow="ALWAYS" />
@@ -108,9 +113,10 @@
                 <VBox.margin><Insets bottom="0" left="14" right="14" top="14" /></VBox.margin>
 
                 <!-- Row 1 — Folder -->
-                <HBox alignment="CENTER_LEFT" spacing="10">
+                <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label minWidth="60" styleClass="field-label" text="Folder" />
                     <TextField fx:id="txtFolderPath" editable="false" prefHeight="30" promptText="/Users/Downloads" styleClass="path-field" HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnRefresh" onAction="#handleRefresh" prefHeight="30" prefWidth="32" styleClass="btn-refresh" text="↻" />
                     <Button fx:id="btnBrowse" onAction="#handleBrowse" prefHeight="30" prefWidth="72" styleClass="btn-filled" text="Browse" />
                 </HBox>
 
@@ -132,7 +138,7 @@
 
                     <Region HBox.hgrow="ALWAYS" />
 
-                    <Button fx:id="btnScan" disable="true" onAction="#handleScan" prefHeight="30" styleClass="btn-filled" text="Scan &amp; Preview" />
+                    <Button fx:id="btnPreview" disable="true" onAction="#handlePreview" prefHeight="30" styleClass="btn-filled" text="Preview" />
 
                     <Button fx:id="btnApply" disable="true" onAction="#handleApply" prefHeight="30" styleClass="btn-success" text="Apply Changes" />
                 </HBox>
@@ -242,8 +248,6 @@
                 <Label fx:id="lblStatus" styleClass="status-label" text="Select a folder to get started" HBox.hgrow="ALWAYS" />
 
                 <Button fx:id="btnOpenFolder" onAction="#handleOpenFolder" styleClass="btn-toggle-preview" text="Open Folder" visible="false" />
-
-                <Button fx:id="btnTogglePreview" onAction="#handlePreview" styleClass="btn-toggle-preview" text="Show preview" visible="false" />
 
                 <ProgressBar fx:id="scanProgress" managed="false" prefHeight="3" prefWidth="110" progress="0" styleClass="scan-progress" visible="false" />
 

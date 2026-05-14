@@ -28,7 +28,7 @@ public class SnapshotManager {
         return dir;
     }
 
-    static String filenameFor(Instant timestamp) {
+    public static String filenameFor(Instant timestamp) {
         return FILENAME_FMT.format(timestamp) + ".snap";
     }
 

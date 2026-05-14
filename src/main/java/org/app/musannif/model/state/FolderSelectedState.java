@@ -9,14 +9,9 @@ public class FolderSelectedState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(false);
+        ctx.setBtnPreviewDisabled(false);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnTogglePreviewDisabled(true);
-        ctx.setStatus("Folder selected. Click Scan Folder to continue.");
-    }
-
-    @Override
-    public void onScan(MainController ctx) {
-        ctx.transitionTo(new ScanningState());
+        ctx.setBtnRefreshDisabled(false);
+        ctx.setStatus("Folder selected.");
     }
 }

@@ -90,6 +90,16 @@
     -fx-font-weight: bold;
 }
 
+/* Nav group container */
+.nav-group {
+    -fx-background-color: #161922;
+    -fx-background-radius: 8;
+    -fx-border-color: #2E3244;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 2 0 2 0;
+}
+
 /* Inactive nav item */
 .nav-item {
     -fx-background-color: transparent;
@@ -324,6 +334,27 @@
 }
 .btn-danger:hover {
     -fx-background-color: #f96060;
+}
+
+/* Refresh icon button (↻) */
+.btn-refresh {
+    -fx-background-color: transparent;
+    -fx-border-color: #2E3244;
+    -fx-border-width: 1;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-text-fill: #7B82A0;
+    -fx-font-size: 15px;
+    -fx-padding: 0;
+    -fx-cursor: hand;
+}
+.btn-refresh:hover {
+    -fx-border-color: #4ADE80;
+    -fx-text-fill: #4ADE80;
+    -fx-background-color: #4ADE8011;
+}
+.btn-refresh:pressed {
+    -fx-background-color: #4ADE8022;
 }
 
 /* Small icon button (close, X) */
@@ -613,8 +644,39 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   HISTORY / MODAL DIALOG  (used from controller via Dialog/Stage)
+   DIALOG / MODAL  (Alert dialogs for confirm & details)
 ══════════════════════════════════════════════════════════════════ */
+
+/* Dialog pane root */
+.dialog-pane {
+    -fx-background-color: #0F1117;
+    -fx-border-color: #2E3244;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+
+.dialog-pane > .button-bar {
+    -fx-background-color: #1A1D27;
+    -fx-border-color: #2E3244 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 10 14 10 14;
+}
+
+.dialog-pane > .button-bar > .container {
+    -fx-background-color: transparent;
+    -fx-alignment: CENTER_RIGHT;
+}
+
+.dialog-pane > .content {
+    -fx-background-color: #0F1117;
+    -fx-padding: 18 20 14 20;
+}
+
+.dialog-pane .button {
+    -fx-cursor: hand;
+}
+
+/* Extra class used alongside dialog-pane */
 .modal-root {
     -fx-background-color: #0F1117;
     -fx-border-color: #2E3244;

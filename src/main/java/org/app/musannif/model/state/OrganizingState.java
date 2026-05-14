@@ -10,9 +10,9 @@ public class OrganizingState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(true);
+        ctx.setBtnPreviewDisabled(true);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnTogglePreviewDisabled(true);
+        ctx.setBtnRefreshDisabled(true);
         ctx.setStatus("Organizing…");
     }
 }

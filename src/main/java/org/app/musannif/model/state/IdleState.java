@@ -11,9 +11,9 @@ public class IdleState implements AppState {
 
     @Override
     public void onEnter(MainController ctx) {
-        ctx.setBtnScanDisabled(true);
+        ctx.setBtnPreviewDisabled(true);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnTogglePreviewDisabled(true);
+        ctx.setBtnRefreshDisabled(true);
         ctx.setStatus("Select a folder to begin.");
     }
 }
