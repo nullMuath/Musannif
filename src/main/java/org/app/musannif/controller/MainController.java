@@ -15,6 +15,7 @@ import org.app.musannif.model.*;
 import org.app.musannif.model.category.*;
 import org.app.musannif.model.command.CommandHistory;
 import org.app.musannif.model.state.*;
+import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -27,6 +28,7 @@ import javafx.stage.Stage;
 
 import org.app.musannif.model.history.OperationHistory;
 import org.app.musannif.model.history.OperationRecord;
+import org.app.musannif.util.FileIconCache;
 
 import java.awt.*;
 import java.io.File;
@@ -129,7 +131,7 @@ public class MainController {
     @FXML private Button     btnClose;
     @FXML private ImageView  sidebarLogo;
     @FXML private TableView<ScannedFile>           fileTable;
-    @FXML private TableColumn<ScannedFile, String> colName;
+    @FXML private TableColumn<ScannedFile, ScannedFile> colName;
     @FXML private TableColumn<ScannedFile, String> colExt;
     @FXML private TableColumn<ScannedFile, String> colSize;
     @FXML private TableColumn<ScannedFile, String> colModified;
@@ -170,14 +172,52 @@ public class MainController {
         fileTable.setItems(scannedFiles);
         fileTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
 
-        colName.setCellValueFactory(cd ->
-                new SimpleStringProperty(cd.getValue().path().getFileName().toString()));
+        colName.setCellValueFactory(cd -> new ReadOnlyObjectWrapper<>(cd.getValue()));
+        colName.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(ScannedFile item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setText(null);
+                } else {
+                    Image icon = FileIconCache.getIcon(item.path());
+                    ImageView iv = new ImageView(icon);
+                    Label name = new Label(item.path().getFileName().toString());
+                    name.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:16px;");
+                    HBox box = new HBox(8, iv, name);
+                    box.setAlignment(Pos.CENTER_LEFT);
+                    setGraphic(box);
+                    setText(null);
+                }
+            }
+        });
         colExt.setCellValueFactory(cd ->
                 new SimpleStringProperty(cd.getValue().extension()));
         colSize.setCellValueFactory(cd ->
                 new SimpleStringProperty(helperMethods.formatFileSize(cd.getValue().sizeBytes())));
         colModified.setCellValueFactory(cd ->
                 new SimpleStringProperty(helperMethods.formatDateTime(cd.getValue().lastModified())));
+
+        fileTable.setRowFactory(tv -> {
+            TableRow<ScannedFile> row = new TableRow<>();
+            ContextMenu ctx = new ContextMenu();
+            javafx.scene.control.MenuItem openItem = new javafx.scene.control.MenuItem("Open in Explorer");
+            openItem.setOnAction(e -> {
+                ScannedFile sf = row.getItem();
+                if (sf != null) {
+                    try {
+                        Runtime.getRuntime().exec(
+                            new String[]{"explorer.exe", "/select,", sf.path().toAbsolutePath().toString()});
+                    } catch (Exception ex) {
+                        setStatus("Failed to open Explorer: " + ex.getMessage());
+                    }
+                }
+            });
+            ctx.getItems().add(openItem);
+            row.setContextMenu(ctx);
+            return row;
+        });
 
         setupTitleBarDrag();
         setupPreviewResize();
