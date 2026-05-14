@@ -6,59 +6,27 @@ import org.app.musannif.model.Logger;
 import java.util.*;
 import java.util.stream.Stream;
 
-
-
-
 /**
  * Categorizes a collection of ScannedFiles into a map keyed by category name.
  *
- * <h3>Design notes</h3>
- * <ul>
- *   <li>Depends only on the {@link FileCategory} interface — never on concrete classes.</li>
- *   <li>Categories are checked in registration order; first match wins.</li>
- *   <li>Files that no category claims land in {@value #FALLBACK_CATEGORY}.</li>
- *   <li>Use {@link Builder} to compose any set of categories at runtime.</li>
- * </ul>
- *
- * <h3>Usage example</h3>
- * <pre>{@code
- * ExtensionFileCategorizer categorizer = new ExtensionFileCategorizer.Builder()
- *         .register(new Categories.Documents())
- *         .register(new Categories.Images())
- *         .register(new Categories.Videos())
- *         .register(new Categories.Audio())
- *         .register(new Categories.Archives())
- *         .build();
- *
- * List<ScannedFile> files = scanner.scan(somePath);
- * Map<String, List<ScannedFile>> result = categorizer.categorize(files);
- * }</pre>
+ * Design notes
+ *   Categories are checked in registration order; first match wins.
+ *   Files that no category claims land in {@value #FALLBACK_CATEGORY}.
+ *   Decorator-aware: if a registered category is a {@link SizeFilterDecorator}
+ *   or {@link DateFilterDecorator}, {@code accepts(ScannedFile)} is called so
+ *   that size and date filters are actually enforced during categorization.
  */
 public class ExtensionFileCategorizer implements FileCategorizer {
 
     public static final String FALLBACK_CATEGORY = "Other";
 
-    /** Ordered list — iteration order determines priority (first match wins). */
     private final List<FileCategory> categories;
 
     private ExtensionFileCategorizer(Builder builder) {
-        // Defensive copy; preserves insertion order (= priority order).
         this.categories = Collections.unmodifiableList(new ArrayList<>(builder.categories));
     }
 
-    // -------------------------------------------------------------------------
-    //  Core API
-    // -------------------------------------------------------------------------
-
-    /**
-     * Categorizes the given files.
-     *
-     * @param files any collection of ScannedFile objects (e.g. from FileScanner)
-     * @return a map from category name → list of files in that category.
-     *         The map always contains at least the registered category names
-     *         as keys (with empty lists if no files matched); uncategorized
-     *         files appear under {@value #FALLBACK_CATEGORY}.
-     */
+    @Override
     public Map<String, List<ScannedFile>> categorize(Collection<ScannedFile> files) {
         Map<String, List<ScannedFile>> result = new LinkedHashMap<>();
         for (FileCategory cat : categories) {
@@ -67,7 +35,7 @@ public class ExtensionFileCategorizer implements FileCategorizer {
         result.put(FALLBACK_CATEGORY, new ArrayList<>());
 
         for (ScannedFile file : files) {
-            String targetCategory = resolve(file.extension());
+            String targetCategory = resolve(file);   // ← full ScannedFile, not just extension
             result.get(targetCategory).add(file);
         }
 
@@ -75,30 +43,32 @@ public class ExtensionFileCategorizer implements FileCategorizer {
         return result;
     }
 
-    /** Convenience overload that accepts a Stream (e.g. from FileScanner.scanAsStream). */
     public Map<String, List<ScannedFile>> categorize(Stream<ScannedFile> files) {
         return categorize(files.toList());
     }
 
-    // -------------------------------------------------------------------------
-    //  Internal helpers
-    // -------------------------------------------------------------------------
-
     /**
-     * Returns the name of the first category that accepts the extension,
-     * or {@value #FALLBACK_CATEGORY} if none does.
+     * Resolves the category for a file using the full ScannedFile so that
+     * decorator filters (size, date) are applied when present.
      */
-    private String resolve(String extension) {
+    private String resolve(ScannedFile file) {
         for (FileCategory cat : categories) {
-            if (cat.accepts(extension)) {
-                return cat.getName();
-            }
+            if (accepts(cat, file)) return cat.getName();
         }
         return FALLBACK_CATEGORY;
     }
 
-    // -------------------------------------------------------------------------
-    //  Builder
+    /**
+     * Dispatches to the right accepts() overload.
+     * SizeFilterDecorator and DateFilterDecorator expose accepts(ScannedFile);
+     * everything else uses accepts(String extension).
+     */
+    private static boolean accepts(FileCategory cat, ScannedFile file) {
+        if (cat instanceof SizeFilterDecorator sfd) return sfd.accepts(file);
+        if (cat instanceof DateFilterDecorator  dfd) return dfd.accepts(file);
+        return cat.accepts(file.extension());
+    }
+
     // -------------------------------------------------------------------------
 
     public static class Builder {

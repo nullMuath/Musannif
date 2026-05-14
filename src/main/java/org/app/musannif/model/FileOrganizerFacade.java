@@ -4,7 +4,7 @@ import org.app.musannif.model.category.Categories;
 import org.app.musannif.model.category.ExtensionFileCategorizer;
 import org.app.musannif.model.category.FileCategory;
 import org.app.musannif.model.category.FileCategorizer;
-import org.app.musannif.model.Logger;
+import org.app.musannif.model.command.CommandHistory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -14,27 +14,11 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Facade (structural design pattern) that hides the three-step pipeline
- * (scan → categorize → organize) behind a single {@link #organize} call.
+ * Facade — hides the scan → categorize → organize pipeline behind a single
+ * {@link #organize} call.
  *
- * <p>
- * The controller or any other caller only needs to know <em>what</em> to
- * organize and <em>where</em> to put the result — all subsystem wiring
- * ({@link FileScanner}, {@link ExtensionFileCategorizer}, {@link FileOrganizer}) is
- * hidden inside this class.
- * </p>
- *
- * <h3>Usage example</h3>
- * <pre>{@code
- * FileOrganizerFacade facade = new FileOrganizerFacade.Builder()
- *         .skipHidden(true)
- *         .maxDepth(1)
- *         .withDefaultCategories()
- *         .build();
- *
- * FileOrganizer.OrganizationResult result = facade.organize(sourcePath, targetPath);
- * System.out.println("Moved: " + result.movedFiles());
- * }</pre>
+ * The internal {@link FileOrganizer} is exposed via {@link #getOrganizer()} so
+ * callers can access undo/redo and the Memento snapshot after organizing.
  */
 public class FileOrganizerFacade {
 
@@ -51,25 +35,22 @@ public class FileOrganizerFacade {
         if (builder.customCategorizer != null) {
             this.categorizer = builder.customCategorizer;
         } else {
-            ExtensionFileCategorizer.Builder categorizerBuilder = new ExtensionFileCategorizer.Builder();
+            ExtensionFileCategorizer.Builder cb = new ExtensionFileCategorizer.Builder();
             for (FileCategory category : builder.categories) {
-                categorizerBuilder.register(category);
+                cb.register(category);
             }
-            this.categorizer = categorizerBuilder.build();
+            this.categorizer = cb.build();
         }
 
-        this.organizer = new FileOrganizer();
+        // Use the caller-supplied CommandHistory so the controller shares the
+        // same undo/redo stack, or fall back to a private one.
+        this.organizer = (builder.commandHistory != null)
+                ? new FileOrganizer(builder.commandHistory)
+                : new FileOrganizer();
     }
 
-    /**
-     * Runs the full scan → categorize → organize pipeline.
-     *
-     * @param sourceDirectory directory to scan for files
-     * @param targetDirectory directory where category folders will be created
-     * @return summary of how many files were moved or skipped
-     * @throws IOException if scanning, folder creation, or file moves fail
-     */
-    public FileOrganizer.OrganizationResult organize(Path sourceDirectory, Path targetDirectory) throws IOException {
+    public FileOrganizer.OrganizationResult organize(Path sourceDirectory, Path targetDirectory)
+            throws IOException {
         Objects.requireNonNull(sourceDirectory, "sourceDirectory must not be null");
         Objects.requireNonNull(targetDirectory, "targetDirectory must not be null");
 
@@ -79,6 +60,10 @@ public class FileOrganizerFacade {
         return organizer.applyCategorization(categorized, targetDirectory);
     }
 
+    /** Exposes the internal organizer so callers can reach getLastMemento(). */
+    public FileOrganizer getOrganizer() { return organizer; }
+
+    // -------------------------------------------------------------------------
 
     public static class Builder {
 
@@ -86,11 +71,9 @@ public class FileOrganizerFacade {
         private int maxDepth = -1;
         private final List<FileCategory> categories = new ArrayList<>();
         private FileCategorizer customCategorizer = null;
+        private CommandHistory commandHistory = null;
 
-        public Builder skipHidden(boolean skip) {
-            this.skipHidden = skip;
-            return this;
-        }
+        public Builder skipHidden(boolean skip)   { this.skipHidden = skip; return this; }
 
         public Builder maxDepth(int depth) {
             if (depth < -1) throw new IllegalArgumentException("maxDepth must be >= -1");
@@ -110,10 +93,12 @@ public class FileOrganizerFacade {
             return this;
         }
 
-        /**
-         * Registers the default set of categories:
-         * Documents, Images, Videos, Audio, Archives.
-         */
+        /** Shares an existing CommandHistory with the facade. */
+        public Builder commandHistory(CommandHistory history) {
+            this.commandHistory = history;
+            return this;
+        }
+
         public Builder withDefaultCategories() {
             this.categories.add(new Categories.Documents());
             this.categories.add(new Categories.Images());
@@ -123,8 +108,6 @@ public class FileOrganizerFacade {
             return this;
         }
 
-        public FileOrganizerFacade build() {
-            return new FileOrganizerFacade(this);
-        }
+        public FileOrganizerFacade build() { return new FileOrganizerFacade(this); }
     }
 }
