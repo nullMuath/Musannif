@@ -115,9 +115,9 @@
                 <!-- Row 1 — Folder -->
                 <HBox alignment="CENTER_LEFT" spacing="8">
                     <Label minWidth="60" styleClass="field-label" text="Folder" />
-                    <TextField fx:id="txtFolderPath" editable="false" prefHeight="30" promptText="/Users/Downloads" styleClass="path-field" HBox.hgrow="ALWAYS" />
-                    <Button fx:id="btnRefresh" onAction="#handleRefresh" prefHeight="30" prefWidth="32" styleClass="btn-refresh" text="↻" />
-                    <Button fx:id="btnBrowse" onAction="#handleBrowse" prefHeight="30" prefWidth="72" styleClass="btn-filled" text="Browse" />
+                    <TextField fx:id="txtFolderPath" editable="false" prefHeight="32" promptText="/Users/Downloads" styleClass="path-field" HBox.hgrow="ALWAYS" />
+                    <Button fx:id="btnRefresh" onAction="#handleRefresh" prefHeight="32" prefWidth="32" styleClass="btn-refresh" text="↻" />
+                    <Button fx:id="btnBrowse" onAction="#handleBrowse" prefHeight="32" prefWidth="85" styleClass="btn-filled" text="Browse" />
                 </HBox>
 
                 <!-- Row 2 — Organize by + actions -->
@@ -138,9 +138,9 @@
 
                     <Region HBox.hgrow="ALWAYS" />
 
-                    <Button fx:id="btnPreview" disable="true" onAction="#handlePreview" prefHeight="30" styleClass="btn-filled" text="Preview" />
+                    <Button fx:id="btnPreview" disable="true" onAction="#handlePreview" prefHeight="32" prefWidth="85" styleClass="btn-filled" text="Preview" />
 
-                    <Button fx:id="btnApply" disable="true" onAction="#handleApply" prefHeight="30" styleClass="btn-success" text="Apply Changes" />
+                    <Button fx:id="btnApply" disable="true" onAction="#handleApply" prefHeight="32" prefWidth="120" styleClass="btn-success" text="Apply Changes" />
                 </HBox>
             </VBox>
 

@@ -4,11 +4,39 @@
  */
 
 /* ══════════════════════════════════════════════════════════════════
+   FONT-FACE — IBM Plex
+══════════════════════════════════════════════════════════════════ */
+@font-face {
+    font-family: 'IBM Plex Sans';
+    src: url('fonts/IBMPlexSans-Regular.ttf');
+}
+@font-face {
+    font-family: 'IBM Plex Sans Medium';
+    src: url('fonts/IBMPlexSans-Medium.ttf');
+}
+@font-face {
+    font-family: 'IBM Plex Sans Bold';
+    src: url('fonts/IBMPlexSans-Bold.ttf');
+}
+@font-face {
+    font-family: 'IBM Plex Sans Arabic';
+    src: url('fonts/IBMPlexSansArabic-Regular.ttf');
+}
+@font-face {
+    font-family: 'IBM Plex Sans Arabic Medium';
+    src: url('fonts/IBMPlexSansArabic-Medium.ttf');
+}
+@font-face {
+    font-family: 'IBM Plex Sans Arabic Bold';
+    src: url('fonts/IBMPlexSansArabic-Bold.ttf');
+}
+
+/* ══════════════════════════════════════════════════════════════════
    ROOT
 ══════════════════════════════════════════════════════════════════ */
 .root-pane {
     -fx-background-color: #0F1117;
-    -fx-font-family: "Segoe UI", "SF Pro Text", sans-serif;
+    -fx-font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
     -fx-font-size: 12px;
 }
 
@@ -233,9 +261,9 @@
     -fx-background-radius: 6;
     -fx-border-radius: 6;
     -fx-text-fill: black;
-    -fx-font-size: 12px;
-    -fx-font-weight: 500;
-    -fx-padding: 0 16 0 16;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+    -fx-padding: 0 18 0 18;
     -fx-cursor: hand;
 }
 .btn-filled:hover {

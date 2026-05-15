@@ -828,7 +828,6 @@ public class MainController {
             }
 
             memento.restore();
-            SnapshotManager.delete(selected);
 
             refreshHistoryTable();
             setStatus("Operation undone.");
@@ -839,12 +838,12 @@ public class MainController {
     }
 
     private void handleShowDetails(OperationRecord record) {
-        List<String[]> mappings;
+        List<String[]> mappings = new java.util.ArrayList<>();
+        boolean mappingsFailed = false;
         try {
             mappings = SnapshotManager.loadFileMappings(record);
         } catch (IOException e) {
-            setStatus("Failed to load snapshot details: " + e.getMessage());
-            return;
+            mappingsFailed = true;
         }
 
         long folderCount = mappings.stream()
@@ -863,6 +862,9 @@ public class MainController {
                 .limit(5)
                 .map(e -> e.getKey().toUpperCase() + " \u00D7" + e.getValue())
                 .collect(java.util.stream.Collectors.joining("  \u2022  "));
+        if (extSummary.isBlank()) {
+            extSummary = "Details unavailable";
+        }
 
         boolean restorable = SnapshotManager.isRestorable(record);
 
@@ -914,7 +916,14 @@ public class MainController {
         TableColumn<String[], String> colNew = new TableColumn<>("NEW LOCATION");
         colNew.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue()[0]));
         fileTable.getColumns().addAll(colOrig, colNew);
-        fileTable.getItems().addAll(mappings);
+
+        if (mappingsFailed || mappings.isEmpty()) {
+            Label noData = new Label(mappingsFailed ? "Details unavailable (snapshot not found)" : "No files in this operation");
+            noData.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:12px;");
+            fileTable.setPlaceholder(noData);
+        } else {
+            fileTable.getItems().addAll(mappings);
+        }
 
         // ── Assemble ──────────────────────────────────────────────
         VBox body = new VBox(10, headerRow, meta, fileTable);
@@ -978,7 +987,7 @@ public class MainController {
         repoLink.setOnAction(e -> openURL("https://github.com/cpit252-spring-26-IT2/project-musannif"));
 
         Label appTitle = new Label("Musannif - \u0645\u0635\u0646\u0641");
-        appTitle.setStyle("-fx-text-fill:#E8EAF0;-fx-font-size:20px;-fx-font-weight:bold;");
+        appTitle.setStyle("-fx-font-family:'IBM Plex Sans Arabic';-fx-text-fill:#E8EAF0;-fx-font-size:20px;-fx-font-weight:bold;");
 
         Label desc = new Label("Organizes your files into neat folders\nby type, date, or extension.");
         desc.setStyle("-fx-text-fill:#9DA3BA;-fx-font-size:13px;-fx-alignment:CENTER;-fx-line-spacing:4;");
