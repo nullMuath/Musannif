@@ -20,7 +20,7 @@ public class DoneState implements AppState {
     public void onEnter(MainController ctx) {
         ctx.setBtnPreviewDisabled(true);
         ctx.setBtnApplyDisabled(true);
-        ctx.setBtnRefreshDisabled(true);
+        ctx.setBtnRefreshDisabled(false);
         ctx.setStatus("✓ Done — " + movedFiles + " files moved, " + skippedFiles + " skipped.");
         ctx.markSuccess();
     }

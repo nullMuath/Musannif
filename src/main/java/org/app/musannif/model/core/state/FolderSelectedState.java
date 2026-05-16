@@ -14,4 +14,9 @@ public class FolderSelectedState implements AppState {
         ctx.setBtnRefreshDisabled(false);
         ctx.setStatus("Folder selected.");
     }
+
+    @Override
+    public void onScan(MainController ctx) {
+        ctx.transitionTo(new ScanningState());
+    }
 }

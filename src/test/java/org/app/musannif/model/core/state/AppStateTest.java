@@ -29,10 +29,13 @@ class AppStateTest {
         AppState lastTransition;
 
         // Override every method the states call
-        public void setBtnScanDisabled(boolean v)  { scanDisabled  = v; }
-        public void setBtnApplyDisabled(boolean v) { applyDisabled = v; }
-        public void setStatus(String s)            { status = s; }
-        public void transitionTo(AppState next)    { lastTransition = next; }
+        public void setBtnRefreshDisabled(boolean v) { scanDisabled  = v; }
+        public void setBtnPreviewDisabled(boolean v) { /* preview button, not tracked here */ }
+        public void setBtnApplyDisabled(boolean v)   { applyDisabled = v; }
+        public void setStatus(String s)              { status = s; }
+        public void transitionTo(AppState next)      { lastTransition = next; }
+        public void showTable()                      { /* no-op */ }
+        public void markSuccess()                    { /* no-op */ }
     }
 
     // =========================================================================

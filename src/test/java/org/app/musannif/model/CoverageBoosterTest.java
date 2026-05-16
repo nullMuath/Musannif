@@ -159,28 +159,25 @@ class CoverageBoosterTest {
 
     @Test
     void organizer_ioExceptionDuringMove_incrementsSkipped() throws IOException {
-        // Create a read-only target directory sub-path that cannot be written to,
-        // causing the move to fail and hitting the skippedFiles++ branch.
         Path src = Files.createDirectory(tempDir.resolve("srcIO"));
-        Path target = tempDir.resolve("targetIO");
-        Path f = src.resolve("locked.pdf");
+        Path f = src.resolve("blocked.pdf");
         Files.writeString(f, "content");
 
         ScannedFile sf = new ScannedFile(f, "pdf", 7L, Instant.now());
 
-        // Point the destination inside a FILE (not a directory) so createDirectories fails.
-        Path blocker = Files.writeString(target, "I am a file, not a dir");
+        // Create a FILE at the path that will be used as the category sub-directory
+        // so createDirectories(categoryDir) throws FileAlreadyExistsException.
+        // We use a valid targetDirectory, but place a file where the "Docs" subfolder
+        // should go, causing the per-file createDirectories to fail → skipped++.
+        Path ioTarget = Files.createDirectory(tempDir.resolve("ioTarget"));
+        Files.writeString(ioTarget.resolve("Docs"), "I block the Docs subfolder");
 
-        // The category directory would be target/Docs, but target itself is a file
-        // → Files.createDirectories(target) on the organizer level succeeds (target exists),
-        // but Files.createDirectories(move.destination().getParent()) later sees a file
-        // where a directory should be → IOException → skipped.
         FileOrganizer organizer = new FileOrganizer();
         FileOrganizer.OrganizationResult result = organizer.applyCategorization(
-                Map.of("Docs", List.of(sf)), blocker.getParent().resolve("targetIO"));
+                Map.of("Docs", List.of(sf)), ioTarget);
 
-        // Either skipped or moved depending on FS, but must not throw
-        assertTrue(result.skippedFiles() >= 0);
+        assertEquals(1, result.skippedFiles());
+        assertEquals(0, result.movedFiles());
     }
 
     // =========================================================================
@@ -191,6 +188,22 @@ class CoverageBoosterTest {
     //  skipHidden=true with a hidden directory → SKIP_SUBTREE
     // =========================================================================
 
+    /** Make a path hidden using the OS-appropriate mechanism. Returns true if hidden. */
+    private static boolean makeHidden(Path path) {
+        try {
+            java.nio.file.attribute.DosFileAttributeView dos =
+                    Files.getFileAttributeView(path, java.nio.file.attribute.DosFileAttributeView.class);
+            if (dos != null) {
+                dos.setHidden(true);
+                return true;
+            }
+            // On Unix, dot-prefix is sufficient — Files.isHidden() checks it.
+            return Files.isHidden(path);
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
     @Test
     void scanner_skipHiddenTrue_skipsHiddenDirectory() throws IOException {
         // Create a visible file and a hidden sub-directory with a file inside.
@@ -200,6 +213,11 @@ class CoverageBoosterTest {
         Path hiddenDir = tempDir.resolve(".hiddenDir");
         Files.createDirectory(hiddenDir);
         Files.writeString(hiddenDir.resolve("secret.txt"), "secret");
+
+        // On Windows, dot-prefix alone doesn't make a file hidden; set the attribute.
+        boolean hidden = makeHidden(hiddenDir);
+        org.junit.jupiter.api.Assumptions.assumeTrue(hidden,
+                "Skipping: could not make directory hidden on this OS");
 
         FileScanner scanner = new FileScanner.Builder()
                 .skipHidden(true)
@@ -214,14 +232,20 @@ class CoverageBoosterTest {
     @Test
     void scanner_skipHiddenTrue_skipsHiddenFiles() throws IOException {
         Files.writeString(tempDir.resolve("normal.txt"), "hi");
-        Files.writeString(tempDir.resolve(".dotfile"), "hidden");
+        Path dotFile = tempDir.resolve(".dotfile");
+        Files.writeString(dotFile, "hidden");
+
+        // On Windows, set the hidden attribute; on Unix dot-prefix suffices.
+        boolean hidden = makeHidden(dotFile);
+        org.junit.jupiter.api.Assumptions.assumeTrue(hidden,
+                "Skipping: could not make file hidden on this OS");
 
         FileScanner scanner = new FileScanner.Builder()
                 .skipHidden(true)
                 .build();
         List<ScannedFile> results = scanner.scan(tempDir);
 
-        // .dotfile is hidden on Linux; normal.txt should still appear.
+        // .dotfile is hidden; normal.txt should still appear.
         assertTrue(results.stream().allMatch(sf -> !sf.path().getFileName().toString().startsWith(".")));
     }
 
@@ -278,7 +302,13 @@ class CoverageBoosterTest {
         Path src = Files.createDirectory(tempDir.resolve("facadeSrc"));
         Path target = tempDir.resolve("facadeTarget");
         Files.writeString(src.resolve("doc.pdf"), "data");
-        Files.writeString(src.resolve(".hidden.pdf"), "secret");
+        Path hiddenPdf = src.resolve(".hidden.pdf");
+        Files.writeString(hiddenPdf, "secret");
+
+        // On Windows, set the hidden attribute; on Unix dot-prefix suffices.
+        boolean hidden = makeHidden(hiddenPdf);
+        org.junit.jupiter.api.Assumptions.assumeTrue(hidden,
+                "Skipping: could not make file hidden on this OS");
 
         FileOrganizerFacade facade = new FileOrganizerFacade.Builder()
                 .withDefaultCategories()

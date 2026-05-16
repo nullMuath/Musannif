@@ -43,6 +43,7 @@ public class FileScanner {
 
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                        if (!attrs.isRegularFile()) return FileVisitResult.CONTINUE;
                         if (skipHidden && isHidden(file))  return FileVisitResult.CONTINUE;
 
                         String ext = extractExtension(file);

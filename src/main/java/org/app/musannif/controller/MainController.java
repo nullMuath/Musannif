@@ -382,6 +382,15 @@ public class MainController {
     }
 
     @FXML
+    private void handleScan(ActionEvent event) {
+        if (selectedFolder == null) {
+            setStatus("Select a folder first.");
+            return;
+        }
+        doScan();
+    }
+
+    @FXML
     private void handleApply(ActionEvent event) throws IOException {
         if (selectedFolder == null || scannedFiles.isEmpty()) {
             setStatus("Nothing to organize — scan a folder first.");
@@ -961,6 +970,8 @@ public class MainController {
     }
 
     @FXML private void handleSettings(ActionEvent event) { System.out.println("Settings clicked"); }
+
+    @FXML private void handleOrganize(ActionEvent event) { /* reserved for future use */ }
 
     @FXML
     private void handleInfo(ActionEvent event) {

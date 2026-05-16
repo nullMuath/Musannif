@@ -45,13 +45,22 @@ class MainControllerTest {
         AppState lastTransition;
         int transitionCount;
 
-        public void setBtnScanDisabled(boolean v)  { scanDisabled  = v; }
-        public void setBtnApplyDisabled(boolean v) { applyDisabled = v; }
-        public void setStatus(String s)            { lastStatus = s; }
+        public void setBtnRefreshDisabled(boolean v) { scanDisabled  = v; }
+        public void setBtnPreviewDisabled(boolean v) { /* preview — not tracked in this test */ }
+        public void setBtnApplyDisabled(boolean v)   { applyDisabled = v; }
+        public void setStatus(String s)              { lastStatus = s; }
+        public void showTable()                      { /* no-op */ }
+        public void markSuccess()                    { /* no-op */ }
 
         public void transitionTo(AppState next) {
             lastTransition = next;
             transitionCount++;
+            // store field for transitionTo_updatesCurrentState test
+            try {
+                java.lang.reflect.Field f = MainController.class.getDeclaredField("currentState");
+                f.setAccessible(true);
+                f.set(this, next);
+            } catch (Exception e) { /* ignore */ }
             next.onEnter(this);   // keep state machine ticking
         }
 

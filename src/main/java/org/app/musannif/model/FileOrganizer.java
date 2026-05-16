@@ -67,6 +67,7 @@ public class FileOrganizer {
 
         // --- Memento: collect all planned moves before executing any ---
         List<OrganizationMemento.FileMoveRecord> plannedMoves = new ArrayList<>();
+        java.util.Set<Path> claimedDestinations = new java.util.HashSet<>();
 
         for (Map.Entry<String, List<ScannedFile>> entry : categorizedFiles.entrySet()) {
             String categoryName = sanitizeFolderName(entry.getKey());
@@ -80,7 +81,8 @@ public class FileOrganizer {
                         || !Files.exists(scannedFile.path())) continue;
 
                 Path destination = resolveAvailableDestination(
-                        categoryDirectory, scannedFile.path().getFileName());
+                        categoryDirectory, scannedFile.path().getFileName(), claimedDestinations);
+                claimedDestinations.add(destination);
 
                 plannedMoves.add(new OrganizationMemento.FileMoveRecord(
                         scannedFile.path(), destination));
@@ -142,6 +144,22 @@ public class FileOrganizer {
             return ExtensionFileCategorizer.FALLBACK_CATEGORY;
         }
         return folderName.replaceAll("[\\\\/:*?\"<>|]", "_").trim();
+    }
+
+    private Path resolveAvailableDestination(Path directory, Path fileName, java.util.Set<Path> claimed) {
+        Path destination = directory.resolve(fileName);
+        if (!Files.exists(destination) && !claimed.contains(destination)) return destination;
+
+        String originalFileName = fileName.toString();
+        String baseName  = getBaseName(originalFileName);
+        String extension = getExtensionWithDot(originalFileName);
+
+        int counter = 1;
+        while (Files.exists(destination) || claimed.contains(destination)) {
+            destination = directory.resolve(baseName + " (" + counter + ")" + extension);
+            counter++;
+        }
+        return destination;
     }
 
     private Path resolveAvailableDestination(Path directory, Path fileName) {
