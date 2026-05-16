@@ -1,8 +1,9 @@
 package org.app.musannif.model;
 
-import org.app.musannif.model.category.*;
-import org.app.musannif.model.command.CopyFileCommand;
-import org.app.musannif.model.command.MoveFileCommand;
+import org.app.musannif.model.core.category.*;
+import org.app.musannif.model.core.command.CopyFileCommand;
+import org.app.musannif.model.core.command.MoveFileCommand;
+import org.app.musannif.util.helperMethods;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

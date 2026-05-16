@@ -1,10 +1,11 @@
 package org.app.musannif.model;
+import org.app.musannif.util.Logger;
 
-import org.app.musannif.model.category.Categories;
-import org.app.musannif.model.category.ExtensionFileCategorizer;
-import org.app.musannif.model.category.FileCategory;
-import org.app.musannif.model.category.FileCategorizer;
-import org.app.musannif.model.command.CommandHistory;
+import org.app.musannif.model.core.category.Categories;
+import org.app.musannif.model.core.category.ExtensionFileCategorizer;
+import org.app.musannif.model.core.category.FileCategory;
+import org.app.musannif.model.core.category.FileCategorizer;
+import org.app.musannif.model.core.command.CommandHistory;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -1,7 +1,7 @@
 package org.app.musannif.model;
 
-import org.app.musannif.model.command.CommandHistory;
-import org.app.musannif.model.command.MoveFileCommand;
+import org.app.musannif.model.core.command.CommandHistory;
+import org.app.musannif.model.core.command.MoveFileCommand;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

@@ -1,8 +1,8 @@
 package org.app.musannif.controller;
 
 import org.app.musannif.model.*;
-import org.app.musannif.model.command.CommandHistory;
-import org.app.musannif.model.state.*;
+import org.app.musannif.model.core.command.CommandHistory;
+import org.app.musannif.model.core.state.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,11 +45,10 @@ class MainControllerTest {
         AppState lastTransition;
         int transitionCount;
 
-        @Override public void setBtnScanDisabled(boolean v)  { scanDisabled  = v; }
-        @Override public void setBtnApplyDisabled(boolean v) { applyDisabled = v; }
-        @Override public void setStatus(String s)            { lastStatus = s; }
+        public void setBtnScanDisabled(boolean v)  { scanDisabled  = v; }
+        public void setBtnApplyDisabled(boolean v) { applyDisabled = v; }
+        public void setStatus(String s)            { lastStatus = s; }
 
-        @Override
         public void transitionTo(AppState next) {
             lastTransition = next;
             transitionCount++;
@@ -175,7 +174,7 @@ class MainControllerTest {
         Files.writeString(src, "hi");
 
         CommandHistory history = ctrl.getField("commandHistory");
-        history.execute(new org.app.musannif.model.command.MoveFileCommand(src, dst));
+        history.execute(new org.app.musannif.model.core.command.MoveFileCommand(src, dst));
         assertTrue(Files.exists(dst));
 
         ctrl.invoke("handleUndo");
@@ -204,7 +203,7 @@ class MainControllerTest {
         Files.writeString(src, "data");
 
         CommandHistory history = ctrl.getField("commandHistory");
-        history.execute(new org.app.musannif.model.command.MoveFileCommand(src, dst));
+        history.execute(new org.app.musannif.model.core.command.MoveFileCommand(src, dst));
         history.undo();
         assertTrue(Files.exists(src));
 

@@ -1,8 +1,8 @@
 package org.app.musannif.model;
 
-import org.app.musannif.model.command.CommandHistory;
-import org.app.musannif.model.command.MoveFileCommand;
-import org.app.musannif.model.category.ExtensionFileCategorizer;
+import org.app.musannif.model.core.command.CommandHistory;
+import org.app.musannif.model.core.command.MoveFileCommand;
+import org.app.musannif.model.core.category.ExtensionFileCategorizer;
 
 import java.io.IOException;
 import java.nio.file.Files;

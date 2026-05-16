@@ -1,0 +1,46 @@
+package org.app.musannif.util;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class Logger {
+    DateTimeFormatter myFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy-HH-mm-ss");
+    String currentDateTimeString = LocalDateTime.now().format(myFormatter);
+    private static final String LOG_DIR = "logs";
+    private final String logFile = LOG_DIR + "/musannif-app-" + currentDateTimeString + ".log";
+    private PrintWriter writer;
+
+    private static Logger logger;
+
+
+    private Logger(){
+        try {
+            new File(LOG_DIR).mkdirs();
+            FileWriter fw = new FileWriter(logFile);
+            writer = new PrintWriter(fw, true);
+        }
+        catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+
+    public static Logger getLogger(){
+        if(logger == null){
+            logger = new Logger();
+        }
+        return logger;
+    }
+
+
+
+    public void info (String message) {
+        String timestamp = LocalDateTime.now().format(myFormatter);
+        writer.println(timestamp + " - [INFO] - " + message);
+    }
+
+}

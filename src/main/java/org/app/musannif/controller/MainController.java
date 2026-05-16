@@ -1,4 +1,5 @@
 package org.app.musannif.controller;
+import org.app.musannif.util.Logger;
 
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -12,9 +13,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import org.app.musannif.model.*;
-import org.app.musannif.model.category.*;
-import org.app.musannif.model.command.CommandHistory;
-import org.app.musannif.model.state.*;
+import org.app.musannif.model.core.category.*;
+import org.app.musannif.model.core.command.CommandHistory;
+import org.app.musannif.model.core.state.*;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -35,10 +36,12 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.scene.Scene;
 
-import org.app.musannif.model.history.OperationHistory;
-import org.app.musannif.model.history.OperationRecord;
-import org.app.musannif.model.history.SnapshotManager;
+import org.app.musannif.model.core.history.OperationHistory;
+import org.app.musannif.model.core.history.OperationRecord;
+import org.app.musannif.model.core.history.SnapshotManager;
 import org.app.musannif.util.FileIconCache;
+import org.app.musannif.util.helperMethods;
+import org.app.musannif.util.TestFilesGenerator;
 
 import java.awt.*;
 import java.io.File;
@@ -265,10 +268,9 @@ public class MainController {
                 ScannedFile sf = row.getItem();
                 if (sf != null) {
                     try {
-                        Runtime.getRuntime().exec(
-                            new String[]{"explorer.exe", "/select,", sf.path().toAbsolutePath().toString()});
+                        Desktop.getDesktop().open(sf.path().getParent().toFile());
                     } catch (Exception ex) {
-                        setStatus("Failed to open Explorer: " + ex.getMessage());
+                        setStatus("Failed to open file manager: " + ex.getMessage());
                     }
                 }
             });
@@ -325,7 +327,7 @@ public class MainController {
     private void handleBrowse(ActionEvent event) {
         DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle("Select Folder to Organize");
-        chooser.setInitialDirectory(new File(System.getProperty("user.home") + "/.musannif-test"));
+        chooser.setInitialDirectory(new File(System.getProperty("user.home") + File.separator + ".musannif-test"));
         Logger.getLogger().info("Prompt user to select folder");
 
         Stage stage = (Stage) btnBrowse.getScene().getWindow();
@@ -994,7 +996,7 @@ public class MainController {
         desc.setAlignment(Pos.CENTER);
         desc.setPrefHeight(48);
 
-        Label version = new Label("Version 0.2");
+        Label version = new Label("Version 1.1.0");
         version.setStyle("-fx-text-fill:#7B82A0;-fx-font-size:11px;");
 
         Label devLabel = new Label("Developed by");
@@ -1046,7 +1048,7 @@ public class MainController {
         Logger.getLogger().info("Generate Test Files Button Clicked");
         TestFilesGenerator.generate();
         setStatus("Files Generated!");
-        Desktop.getDesktop().open(new File(System.getProperty("user.home") + "/.musannif-test"));
+        Desktop.getDesktop().open(new File(System.getProperty("user.home") + File.separator + ".musannif-test"));
     }
 
     @FXML private void handleMinimize(ActionEvent event) {
