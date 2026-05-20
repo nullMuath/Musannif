@@ -3,6 +3,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Docker — ignore files people drop here, but keep the folder
+my-files/*
+!my-files/.gitkeep
+
 AGENTS.md
 musannif-snapshots/
 

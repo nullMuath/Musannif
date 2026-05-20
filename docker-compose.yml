@@ -1,0 +1,27 @@
+services:
+  musannif:
+    build: .
+    image: musannif-app
+    container_name: musannif
+
+    ports:
+      - "6080:6080"   # Browser VNC → http://localhost:6080/vnc.html
+      - "5900:5900"   # Raw VNC (optional)
+
+    environment:
+      - VNC_PASSWORD=musannif
+      - SCREEN_RES=1280x800x24
+
+    volumes:
+      - ./my-files:/home/user/files
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6080/vnc.html"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
