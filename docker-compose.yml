@@ -9,8 +9,7 @@ services:
       - "5900:5900"   # Raw VNC (optional)
 
     environment:
-      - VNC_PASSWORD=musannif
-      - SCREEN_RES=1280x800x24
+      - SCREEN_RES=1600x1000x24
 
     volumes:
       - ./my-files:/home/user/files

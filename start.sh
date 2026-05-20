@@ -2,15 +2,18 @@
 set -e
 
 DISPLAY_NUM=:1
-SCREEN_RES="${SCREEN_RES:-1280x800x24}"
+SCREEN_RES="${SCREEN_RES:-1600x1000x24}"
 VNC_PORT="${VNC_PORT:-5900}"
 NOVNC_PORT="${NOVNC_PORT:-6080}"
-VNC_PASSWORD="${VNC_PASSWORD:-musannif}"
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  Musannif — مُصَنِّف"
 echo "  Starting display server..."
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+# Ensure the mounted my-files folder exists and is writable
+mkdir -p /home/user/files
+chmod 777 /home/user/files
 
 # 1. Start virtual framebuffer
 Xvfb $DISPLAY_NUM -screen 0 $SCREEN_RES -ac +extension GLX &
@@ -21,15 +24,11 @@ export DISPLAY=$DISPLAY_NUM
 openbox &
 sleep 0.5
 
-# 3. Set VNC password
-mkdir -p ~/.vnc
-x11vnc -storepasswd "$VNC_PASSWORD" ~/.vnc/passwd
-
-# 4. Start VNC server
+# 3. Start VNC server — no password
 x11vnc \
   -display $DISPLAY_NUM \
   -rfbport $VNC_PORT \
-  -rfbauth ~/.vnc/passwd \
+  -nopw \
   -forever \
   -shared \
   -noxdamage \
@@ -37,7 +36,7 @@ x11vnc \
 
 sleep 1
 
-# 5. Start noVNC (browser access)
+# 4. Start noVNC (browser access) — no password
 websockify \
   --web /usr/share/novnc \
   $NOVNC_PORT \
@@ -51,12 +50,12 @@ echo "  ✅ Ready! Open your browser and go to:"
 echo ""
 echo "     http://localhost:${NOVNC_PORT}/vnc.html"
 echo ""
-echo "  VNC Password: ${VNC_PASSWORD}"
-echo "  (or connect a VNC client to localhost:${VNC_PORT})"
+echo "  No password required — just click Connect"
+echo "  Generated test files appear in: ./my-files/musannif-test-files/"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# 6. Launch the JavaFX app
+# 5. Launch the JavaFX app
 cd /app
 exec java \
   --module-path "$(find ~/.m2/repository/org/openjfx -name '*.jar' | tr '\n' ':')" \
